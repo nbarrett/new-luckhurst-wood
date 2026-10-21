@@ -10,17 +10,13 @@ Official sources stay on [forestryengland.uk](https://www.forestryengland.uk/woo
 
 ## Neighbour diary
 
-Photographs from the house opposite the site go in `public/assets/diary/`. Then add a newest-first object to the `diary` array in `src/content.ts`:
+Drop phone photos (JPEG or HEIC) into `public/photos/`, then:
 
-```ts
-{
-  id: "2026-11-02-tracks",
-  date: "2026-11-02",
-  title: "Tracks going in",
-  body: "What you can see from Bethersden Road today.",
-  photos: [{ src: "./assets/diary/2026-11-02-tracks.jpg", alt: "New forest track" }]
-}
+```bash
+npm run photos
 ```
+
+That converts them, skips duplicates, shrinks to 1600px JPEG, names them `YYYY-MM-DD-HHMM-uuid8.jpg` under `public/assets/diary/`, updates `src/content.ts`, and empties the drop folder. Existing captions stay. Write a short `body` on a day in `content.ts` if you want a sentence under the date.
 
 ## Local preview
 

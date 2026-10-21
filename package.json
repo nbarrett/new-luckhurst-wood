@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "dev": "vite --host 0.0.0.0",
+    "photos": "node scripts/ingest-photos.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

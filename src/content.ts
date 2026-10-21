@@ -21,32 +21,50 @@ export type DiaryEntry = {
   photos: DiaryPhoto[];
 };
 
-/** Newest first. Drop files in public/assets/diary/ then add a row here. */
+function shots(date: string, files: string[]): DiaryPhoto[] {
+  return files.map((file) => ({
+    src: `${import.meta.env.BASE_URL}assets/diary/${file}`,
+    alt: `New Luckhurst Wood, ${date}`
+  }));
+}
+
+/** Newest first. Every file dropped in public/photos. */
 export const diary: DiaryEntry[] = [
-  {
-    id: "2026-waiting-for-planting",
-    date: "2026-10-20",
-    title: "From the house opposite",
-    body: "I live across the road from the new woodland. This diary is for photographs of the fields as they become New Luckhurst Wood: grass, tracks, guards, the first trees, and whatever the seasons do after that. New pictures go in as they are taken.",
-    photos: [
-      {
-        src: "./assets/hero-fields.jpg",
-        alt: "Uncut fields at the New Luckhurst site with existing woodland behind"
-      }
-    ]
-  },
-  {
-    id: "2026-official-pond",
-    date: "2026-05-20",
-    title: "The land as Forestry England showed it",
-    body: "Forestry England’s own photograph of the wildlife pond and mature trees, published on the official woodland page. A useful baseline before planting in winter 2026/27.",
-    photos: [
-      {
-        src: "./assets/hero-pond.jpg",
-        alt: "Wildlife pond at the New Luckhurst woodland creation site"
-      }
-    ]
-  }
+  {id: "2026-10-17", date: "2026-10-17", title: "17 October", body: "Evening from across the road.", photos: shots("17 October 2026", ["2026-10-17-1708-62f873be.jpg","2026-10-17-1708-e146d25f.jpg","2026-10-17-1711-6d42b074.jpg"])},
+  {id: "2026-10-14", date: "2026-10-14", title: "14 October", body: "", photos: shots("14 October 2026", ["2026-10-14-1650-1aa20f3a.jpg"])},
+  {id: "2026-10-13", date: "2026-10-13", title: "13 October", body: "", photos: shots("13 October 2026", ["2026-10-13-1645-5de35132.jpg","2026-10-13-1645-7c9ea987.jpg","2026-10-13-1645-d840919a.jpg","2026-10-13-1651-8f461fe1.jpg","2026-10-13-1657-d2e6a508.jpg"])},
+  {id: "2026-10-11", date: "2026-10-11", title: "11 October", body: "", photos: shots("11 October 2026", ["2026-10-11-0103-f9d5ceea.jpg","2026-10-11-0125-f7e0be5f.jpg"])},
+  {id: "2026-10-10", date: "2026-10-10", title: "10 October", body: "Tracks, machines and the fields.", photos: shots("10 October 2026", ["2026-10-10-0922-1ef47736.jpg","2026-10-10-0926-012a18ab.jpg","2026-10-10-0926-c46b7dc8.jpg","2026-10-10-0931-ae6b9942.jpg","2026-10-10-0932-886ae319.jpg","2026-10-10-0938-625930f5.jpg","2026-10-10-1611-70225f3d.jpg","2026-10-10-1617-fa8cf171.jpg","2026-10-10-1632-47a1c266.jpg"])},
+  {id: "2026-10-04", date: "2026-10-04", title: "4 October", body: "", photos: shots("4 October 2026", ["2026-10-04-1738-9574962c.jpg","2026-10-04-1739-a1b99b9f.jpg","2026-10-04-1740-49fe8f63.jpg"])},
+  {id: "2026-09-30", date: "2026-09-30", title: "30 September", body: "", photos: shots("30 September 2026", ["2026-09-30-0646-8dc56cf4.jpg"])},
+  {id: "2026-09-22", date: "2026-09-22", title: "22 September", body: "", photos: shots("22 September 2026", ["2026-09-22-1638-3061246e.jpg"])},
+  {id: "2026-09-17", date: "2026-09-17", title: "17 September", body: "Sunset, plant and the new track.", photos: shots("17 September 2026", ["2026-09-17-1745-f6407f66.jpg","2026-09-17-1750-1bf9ac6a.jpg","2026-09-17-1753-60ae308d.jpg","2026-09-17-1758-dc95a820.jpg","2026-09-17-1759-bc753503.jpg"])},
+  {id: "2026-09-16", date: "2026-09-16", title: "16 September", body: "", photos: shots("16 September 2026", ["2026-09-16-1713-65eaff5e.jpg"])},
+  {id: "2026-09-15", date: "2026-09-15", title: "15 September", body: "The first forest track going in.", photos: shots("15 September 2026", ["2026-09-15-1740-31fc0d29.jpg","2026-09-15-1741-6d60ce3a.jpg","2026-09-15-1743-49edfd32.jpg","2026-09-15-1743-57f86a1d.jpg","2026-09-15-1744-c90ac39a.jpg","2026-09-15-1745-4eb6d633.jpg","2026-09-15-1745-5ada607e.jpg","2026-09-15-1745-f3097621.jpg","2026-09-15-1747-d4b80064.jpg","2026-09-15-1749-6c057536.jpg","2026-09-15-1758-d7467ea7.jpg","2026-09-15-1805-1aa1390b.jpg"])},
+  {id: "2026-09-14", date: "2026-09-14", title: "14 September", body: "Plant arriving on the fields.", photos: shots("14 September 2026", ["2026-09-14-1725-5a2c40a7.jpg"])},
+  {id: "2026-09-11", date: "2026-09-11", title: "11 September", body: "", photos: shots("11 September 2026", ["2026-09-11-1604-32bf605d.jpg","2026-09-11-1610-66075f0b.jpg","2026-09-11-1610-9b043319.jpg","2026-09-11-1610-d2401576.jpg","2026-09-11-1611-c83937a6.jpg","2026-09-11-1616-417798fb.jpg","2026-09-11-1617-de07b241.jpg"])},
+  {id: "2026-09-09", date: "2026-09-09", title: "9 September", body: "", photos: shots("9 September 2026", ["2026-09-09-1758-09742526.jpg","2026-09-09-1800-6a6b4427.jpg","2026-09-09-1800-92a0915f.jpg","2026-09-09-1807-6c286198.jpg","2026-09-09-1810-378a1574.jpg"])},
+  {id: "2026-09-08", date: "2026-09-08", title: "8 September", body: "", photos: shots("8 September 2026", ["2026-09-08-1744-f705f60e.jpg","2026-09-08-1745-6c3a25dd.jpg","2026-09-08-1746-b70f15e2.jpg","2026-09-08-1747-90fa2840.jpg","2026-09-08-1751-86160b4f.jpg","2026-09-08-1753-c86a3889.jpg","2026-09-08-1759-21716ddf.jpg","2026-09-08-1818-bd87de36.jpg","2026-09-08-1818-cde1c0f0.jpg"])},
+  {id: "2026-09-07", date: "2026-09-07", title: "7 September", body: "", photos: shots("7 September 2026", ["2026-09-07-1803-7d203204.jpg","2026-09-07-1804-25ccff70.jpg","2026-09-07-1807-38c2bb8d.jpg","2026-09-07-1807-9e17294d.jpg"])},
+  {id: "2026-09-02", date: "2026-09-02", title: "2 September", body: "", photos: shots("2 September 2026", ["2026-09-02-1755-c833fe0d.jpg","2026-09-02-1756-531cd996.jpg","2026-09-02-1758-96b4e8ec.jpg"])},
+  {id: "2026-08-26", date: "2026-08-26", title: "26 August", body: "", photos: shots("26 August 2026", ["2026-08-26-1817-2c8650a4.jpg","2026-08-26-1817-a0495a6a.jpg","2026-08-26-1817-a4c459d3.jpg"])},
+  {id: "2026-08-24", date: "2026-08-24", title: "24 August", body: "", photos: shots("24 August 2026", ["2026-08-24-1813-d8a8ca34.jpg","2026-08-24-1820-67cb4478.jpg"])},
+  {id: "2026-08-21", date: "2026-08-21", title: "21 August", body: "", photos: shots("21 August 2026", ["2026-08-21-1925-4d30e910.jpg"])},
+  {id: "2026-08-16", date: "2026-08-16", title: "16 August", body: "", photos: shots("16 August 2026", ["2026-08-16-1757-cb301632.jpg","2026-08-16-1800-f46b239e.jpg","2026-08-16-1804-aa54b3b6.jpg","2026-08-16-1819-c46ced6e.jpg","2026-08-16-1857-8ba68668.jpg","2026-08-16-1859-7a7e97aa.jpg","2026-08-16-1922-19d771bb.jpg","2026-08-16-1922-3b81313b.jpg","2026-08-16-1922-41abb363.jpg"])},
+  {id: "2026-08-12", date: "2026-08-12", title: "12 August", body: "", photos: shots("12 August 2026", ["2026-08-12-2002-8ddf1088.jpg","2026-08-12-2002-9761bca0.jpg","2026-08-12-2005-82e0dfb0.jpg"])},
+  {id: "2026-08-11", date: "2026-08-11", title: "11 August", body: "", photos: shots("11 August 2026", ["2026-08-11-1800-6579e0dd.jpg","2026-08-11-1801-856ce2d1.jpg","2026-08-11-1817-4c44f162.jpg","2026-08-11-1818-bae6c7e9.jpg"])},
+  {id: "2026-08-10", date: "2026-08-10", title: "10 August", body: "", photos: shots("10 August 2026", ["2026-08-10-1811-1aec47e2.jpg","2026-08-10-1812-69cc6a54.jpg","2026-08-10-1817-d7b54175.jpg","2026-08-10-1821-499536d8.jpg","2026-08-10-1833-57d84f5c.jpg","2026-08-10-1835-96a27b99.jpg","2026-08-10-1839-b421b630.jpg"])},
+  {id: "2026-07-15", date: "2026-07-15", title: "15 July", body: "", photos: shots("15 July 2026", ["2026-07-15-1801-e2e1745b.jpg","2026-07-15-1828-aa0151ec.jpg","2026-07-15-1909-744f0f8a.jpg","2026-07-15-1937-15fd13ec.jpg","2026-07-15-1954-34bf72be.jpg"])},
+  {id: "2026-06-25", date: "2026-06-25", title: "25 June", body: "", photos: shots("25 June 2026", ["2026-06-25-1759-b1534d6b.jpg","2026-06-25-1759-c0fcf825.jpg","2026-06-25-1915-75aa7fb8.jpg","2026-06-25-1948-075e5f53.jpg","2026-06-25-1948-72a6657b.jpg","2026-06-25-1949-8c382b59.jpg"])},
+  {id: "2026-06-18", date: "2026-06-18", title: "18 June", body: "", photos: shots("18 June 2026", ["2026-06-18-1802-9d9e013f.jpg","2026-06-18-1900-3e5d7b67.jpg","2026-06-18-1901-2c66b6fb.jpg"])},
+  {id: "2026-05-22", date: "2026-05-22", title: "22 May", body: "", photos: shots("22 May 2026", ["2026-05-22-0818-cf312000.jpg"])},
+  {id: "2026-05-19", date: "2026-05-19", title: "19 May", body: "", photos: shots("19 May 2026", ["2026-05-19-1807-fb52eb0e.jpg"])},
+  {id: "2026-05-05", date: "2026-05-05", title: "5 May", body: "", photos: shots("5 May 2026", ["2026-05-05-1247-984fa1ff.jpg"])},
+  {id: "2026-05-04", date: "2026-05-04", title: "4 May", body: "", photos: shots("4 May 2026", ["2026-05-04-1738-4dddec5c.jpg"])},
+  {id: "2026-04-22", date: "2026-04-22", title: "22 April", body: "", photos: shots("22 April 2026", ["2026-04-22-1739-f248356e.jpg","2026-04-22-1837-7f3571b8.jpg"])},
+  {id: "2026-04-16", date: "2026-04-16", title: "16 April", body: "", photos: shots("16 April 2026", ["2026-04-16-1733-6ba79133.jpg"])},
+  {id: "2026-04-13", date: "2026-04-13", title: "13 April", body: "", photos: shots("13 April 2026", ["2026-04-13-1900-4e035ab5.jpg","2026-04-13-1913-2ca1327c.jpg","2026-04-13-1916-3693a298.jpg"])},
+  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1732-d99889c4.jpg","2026-04-10-1829-73dd99ed.jpg","2026-04-10-1832-5ab5c23e.jpg","2026-04-10-1836-96729565.jpg","2026-04-10-1842-61fac197.jpg"])}
 ];
 
 export const sources = {
@@ -369,22 +387,46 @@ export const faqs = [
   }
 ];
 
-export function parseHash(hash: string): Route {
-  const h = hash.replace(/^#/, "").replace(/^\/+/, "");
-  const [view, raw] = h.split("/");
+export function to(path: string): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  if (path === "/" || path === "") {
+    return `${base}/`;
+  }
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function parsePath(pathname: string): Route {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  let path = pathname;
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    path = path.slice(base.length);
+  }
+  const parts = path.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+  const view = parts[0] || "";
+  const raw = parts[1] || "";
   if (view === "panels") {
     const id = Number(raw) || 1;
     return {view: "panels", id: Math.min(8, Math.max(1, id))};
   }
-  if (view === "design") return {view: "design"};
-  if (view === "report") return {view: "report", id: raw || "summary"};
+  if (view === "design") {
+    return {view: "design"};
+  }
+  if (view === "report") {
+    return {view: "report", id: raw || "summary"};
+  }
   if (view === "issues") {
     const id = Number(raw) || 1;
     return {view: "issues", id: Math.min(21, Math.max(1, id))};
   }
-  if (view === "diary") return {view: "diary", id: raw || diary[0]?.id || ""};
-  if (view === "faq") return {view: "faq"};
-  if (view === "sources") return {view: "sources"};
+  if (view === "diary") {
+    return {view: "diary", id: raw || diary[0]?.id || ""};
+  }
+  if (view === "faq") {
+    return {view: "faq"};
+  }
+  if (view === "sources") {
+    return {view: "sources"};
+  }
   return {view: "home"};
 }
 
