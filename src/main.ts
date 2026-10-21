@@ -265,16 +265,24 @@ function normaliseDiaryId(id: string): string {
   return id;
 }
 
-const film = diary
-  .slice()
-  .reverse()
-  .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})))
-  .reduce<{src: string; alt: string; date: string; day: string; slug: string}[]>((acc, shot) => {
+const film = (() => {
+  const taken = new Set<string>();
+  const shots = diary
+    .slice()
+    .reverse()
+    .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})));
+  return shots.map((shot) => {
     const base = timeSlug(fileStem(shot.src));
-    const used = acc.filter((item) => item.slug === base || item.slug.startsWith(`${base}-`)).length;
-    const slug = used === 0 ? base : `${base}-${used + 1}`;
-    return [...acc, {...shot, slug}];
-  }, []);
+    let slug = base;
+    let n = 2;
+    while (taken.has(slug)) {
+      slug = `${base}-${n}`;
+      n += 1;
+    }
+    taken.add(slug);
+    return {...shot, slug};
+  });
+})();
 
 function filmIndexFor(id: string): number {
   const wanted = normaliseDiaryId(id);
@@ -452,25 +460,36 @@ function bindDiaryStage(startId: string): void {
   let dragging = false;
   let last = 0;
   let raf = 0;
+  let dragDist = 0;
+  let current = filmIndexFor(startId);
 
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
   const apply = (): void => {
     const limit = maxX();
-    if (x > 0) x = 0;
-    if (x < -limit) x = -limit;
+    if (limit > 0) {
+      if (x > 0) x = 0;
+      if (x < -limit) x = -limit;
+    }
     strip.style.transform = `translate3d(${x}px, 0, 0)`;
     const mid = track.getBoundingClientRect().left + track.clientWidth / 2;
     let best = 0;
     let bestDist = Infinity;
     slides.forEach((s, i) => {
       const r = s.getBoundingClientRect();
+      if (r.width < 8) {
+        return;
+      }
       const d = Math.abs(r.left + r.width / 2 - mid);
       if (d < bestDist) {
         bestDist = d;
         best = i;
       }
     });
+    if (bestDist === Infinity) {
+      best = current;
+    }
+    current = best;
     const shot = film[best];
     if (!shot) {
       return;
@@ -500,34 +519,80 @@ function bindDiaryStage(startId: string): void {
 
   const goIndex = (i: number): void => {
     const n = Math.max(0, Math.min(slides.length - 1, i));
+    current = n;
     const slide = slides[n];
     const mid = track.clientWidth / 2;
     x = -(slide.offsetLeft + slide.offsetWidth / 2 - mid);
-    apply();
+    const shot = film[n];
+    strip.style.transform = `translate3d(${x}px, 0, 0)`;
+    if (shot) {
+      dateEl.textContent = formatDiaryDate(shot.date);
+      countEl.textContent = `${n + 1} / ${film.length}`;
+      document.querySelectorAll(".tick").forEach((t) => {
+        const j = Number((t as HTMLElement).dataset.jump);
+        t.classList.toggle("on", film[j]?.date === shot.date);
+      });
+      const limit = maxX();
+      const fill = document.getElementById("scrub-fill");
+      const knob = document.getElementById("scrub-knob");
+      const pct = limit === 0 ? 0 : Math.min(100, (-x / limit) * 100);
+      if (fill) fill.style.width = `${pct}%`;
+      if (knob) knob.style.left = `${pct}%`;
+      const path = to(`/diary/${shot.slug}`);
+      if (location.pathname !== path) {
+        history.replaceState(null, "", path);
+      }
+      document.title = `${formatDiaryDate(shot.date)} · New Luckhurst Wood`;
+    }
   };
 
   track.addEventListener("pointerdown", (e) => {
     dragging = true;
     last = e.clientX;
     vx = 0;
+    dragDist = 0;
     track.setPointerCapture(e.pointerId);
     track.classList.add("dragging");
     cancelAnimationFrame(raf);
   });
   track.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
+    if (!dragging) {
+      return;
+    }
     const dx = e.clientX - last;
     last = e.clientX;
     vx = dx;
+    dragDist += Math.abs(dx);
     nudge(dx);
   });
-  const endDrag = (): void => {
-    if (!dragging) return;
+  const endDrag = (e: PointerEvent): void => {
+    if (!dragging) {
+      return;
+    }
     dragging = false;
     track.classList.remove("dragging");
+    const slide = (e.target as Element | null)?.closest?.(".slide");
+    if (dragDist < 12 && slide instanceof HTMLElement) {
+      goIndex(Number(slide.dataset.i));
+      return;
+    }
     const coast = (): void => {
       vx *= 0.94;
-      if (Math.abs(vx) < 0.4) return;
+      if (Math.abs(vx) < 0.4) {
+        const mid = track.getBoundingClientRect().left + track.clientWidth / 2;
+        let best = 0;
+        let bestDist = Infinity;
+        slides.forEach((s, i) => {
+          const r = s.getBoundingClientRect();
+          const d = Math.abs(r.left + r.width / 2 - mid);
+          if (d < bestDist) {
+            bestDist = d;
+            best = i;
+          }
+        });
+        goIndex(best);
+        return;
+      }
       nudge(vx);
       raf = requestAnimationFrame(coast);
     };
@@ -598,7 +663,25 @@ function bindDiaryStage(startId: string): void {
   };
   window.addEventListener("luckhurst-width", diaryResize);
   window.addEventListener("resize", diaryResize);
-  goIndex(filmIndexFor(startId));
+
+  const start = filmIndexFor(startId);
+  const images = Array.from(strip.querySelectorAll("img"));
+  Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        return Promise.resolve();
+      }
+      return img.decode().catch(
+        () =>
+          new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), {once: true});
+            img.addEventListener("error", () => resolve(), {once: true});
+          })
+      );
+    })
+  ).then(() => {
+    requestAnimationFrame(() => goIndex(start));
+  });
 }
 
 function consumeLegacyHash(): void {
