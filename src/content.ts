@@ -49,22 +49,23 @@ export const diary: DiaryEntry[] = [
   {id: "2026-09-02", date: "2026-09-02", title: "2 September", body: "", photos: shots("2 September 2026", ["2026-09-02-1755-c833fe0d.jpg","2026-09-02-1756-531cd996.jpg","2026-09-02-1758-96b4e8ec.jpg"])},
   {id: "2026-08-26", date: "2026-08-26", title: "26 August", body: "", photos: shots("26 August 2026", ["2026-08-26-1817-2c8650a4.jpg","2026-08-26-1817-a0495a6a.jpg","2026-08-26-1817-a4c459d3.jpg"])},
   {id: "2026-08-24", date: "2026-08-24", title: "24 August", body: "", photos: shots("24 August 2026", ["2026-08-24-1813-d8a8ca34.jpg","2026-08-24-1820-67cb4478.jpg"])},
-  {id: "2026-08-21", date: "2026-08-21", title: "21 August", body: "", photos: shots("21 August 2026", ["2026-08-21-1925-4d30e910.jpg"])},
-  {id: "2026-08-16", date: "2026-08-16", title: "16 August", body: "", photos: shots("16 August 2026", ["2026-08-16-1757-cb301632.jpg","2026-08-16-1800-f46b239e.jpg","2026-08-16-1804-aa54b3b6.jpg","2026-08-16-1819-c46ced6e.jpg","2026-08-16-1857-8ba68668.jpg","2026-08-16-1859-7a7e97aa.jpg","2026-08-16-1922-19d771bb.jpg","2026-08-16-1922-3b81313b.jpg","2026-08-16-1922-41abb363.jpg"])},
-  {id: "2026-08-12", date: "2026-08-12", title: "12 August", body: "", photos: shots("12 August 2026", ["2026-08-12-2002-8ddf1088.jpg","2026-08-12-2002-9761bca0.jpg","2026-08-12-2005-82e0dfb0.jpg"])},
+  {id: "2026-08-21", date: "2026-08-21", title: "21 August", body: "", photos: shots("21 August 2026", ["2026-08-21-1825-4d30e910.jpg"])},
+  {id: "2026-08-16", date: "2026-08-16", title: "16 August", body: "", photos: shots("16 August 2026", ["2026-08-16-1757-8ba68668.jpg","2026-08-16-1757-cb301632.jpg","2026-08-16-1759-7a7e97aa.jpg","2026-08-16-1800-f46b239e.jpg","2026-08-16-1804-aa54b3b6.jpg","2026-08-16-1819-c46ced6e.jpg","2026-08-16-1822-19d771bb.jpg","2026-08-16-1822-3b81313b.jpg","2026-08-16-1822-41abb363.jpg"])},
+  {id: "2026-08-12", date: "2026-08-12", title: "12 August", body: "", photos: shots("12 August 2026", ["2026-08-12-1902-8ddf1088.jpg","2026-08-12-1902-9761bca0.jpg","2026-08-12-1905-82e0dfb0.jpg"])},
   {id: "2026-08-11", date: "2026-08-11", title: "11 August", body: "", photos: shots("11 August 2026", ["2026-08-11-1800-6579e0dd.jpg","2026-08-11-1801-856ce2d1.jpg","2026-08-11-1817-4c44f162.jpg","2026-08-11-1818-bae6c7e9.jpg"])},
   {id: "2026-08-10", date: "2026-08-10", title: "10 August", body: "", photos: shots("10 August 2026", ["2026-08-10-1811-1aec47e2.jpg","2026-08-10-1812-69cc6a54.jpg","2026-08-10-1817-d7b54175.jpg","2026-08-10-1821-499536d8.jpg","2026-08-10-1833-57d84f5c.jpg","2026-08-10-1835-96a27b99.jpg","2026-08-10-1839-b421b630.jpg"])},
-  {id: "2026-07-15", date: "2026-07-15", title: "15 July", body: "", photos: shots("15 July 2026", ["2026-07-15-1801-e2e1745b.jpg","2026-07-15-1828-aa0151ec.jpg","2026-07-15-1909-744f0f8a.jpg","2026-07-15-1937-15fd13ec.jpg","2026-07-15-1954-34bf72be.jpg"])},
-  {id: "2026-06-25", date: "2026-06-25", title: "25 June", body: "", photos: shots("25 June 2026", ["2026-06-25-1759-b1534d6b.jpg","2026-06-25-1759-c0fcf825.jpg","2026-06-25-1915-75aa7fb8.jpg","2026-06-25-1948-075e5f53.jpg","2026-06-25-1948-72a6657b.jpg","2026-06-25-1949-8c382b59.jpg"])},
-  {id: "2026-06-18", date: "2026-06-18", title: "18 June", body: "", photos: shots("18 June 2026", ["2026-06-18-1802-9d9e013f.jpg","2026-06-18-1900-3e5d7b67.jpg","2026-06-18-1901-2c66b6fb.jpg"])},
+  {id: "2026-08-08", date: "2026-08-08", title: "8 August", body: "", photos: shots("8 August 2026", ["2026-08-08-1631-0388605d.jpg"])},
+  {id: "2026-07-15", date: "2026-07-15", title: "15 July", body: "", photos: shots("15 July 2026", ["2026-07-15-1801-e2e1745b.jpg","2026-07-15-1809-744f0f8a.jpg","2026-07-15-1828-aa0151ec.jpg","2026-07-15-1837-15fd13ec.jpg","2026-07-15-1854-34bf72be.jpg"])},
+  {id: "2026-06-25", date: "2026-06-25", title: "25 June", body: "", photos: shots("25 June 2026", ["2026-06-25-1759-b1534d6b.jpg","2026-06-25-1759-c0fcf825.jpg","2026-06-25-1815-75aa7fb8.jpg","2026-06-25-1848-075e5f53.jpg","2026-06-25-1848-72a6657b.jpg","2026-06-25-1849-8c382b59.jpg"])},
+  {id: "2026-06-18", date: "2026-06-18", title: "18 June", body: "", photos: shots("18 June 2026", ["2026-06-18-1800-3e5d7b67.jpg","2026-06-18-1801-2c66b6fb.jpg","2026-06-18-1802-9d9e013f.jpg"])},
   {id: "2026-05-22", date: "2026-05-22", title: "22 May", body: "", photos: shots("22 May 2026", ["2026-05-22-0818-cf312000.jpg"])},
   {id: "2026-05-19", date: "2026-05-19", title: "19 May", body: "", photos: shots("19 May 2026", ["2026-05-19-1807-fb52eb0e.jpg"])},
   {id: "2026-05-05", date: "2026-05-05", title: "5 May", body: "", photos: shots("5 May 2026", ["2026-05-05-1247-984fa1ff.jpg"])},
-  {id: "2026-05-04", date: "2026-05-04", title: "4 May", body: "", photos: shots("4 May 2026", ["2026-05-04-1738-4dddec5c.jpg"])},
-  {id: "2026-04-22", date: "2026-04-22", title: "22 April", body: "", photos: shots("22 April 2026", ["2026-04-22-1739-f248356e.jpg","2026-04-22-1837-7f3571b8.jpg"])},
-  {id: "2026-04-16", date: "2026-04-16", title: "16 April", body: "", photos: shots("16 April 2026", ["2026-04-16-1733-6ba79133.jpg"])},
-  {id: "2026-04-13", date: "2026-04-13", title: "13 April", body: "", photos: shots("13 April 2026", ["2026-04-13-1900-4e035ab5.jpg","2026-04-13-1913-2ca1327c.jpg","2026-04-13-1916-3693a298.jpg"])},
-  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1732-d99889c4.jpg","2026-04-10-1829-73dd99ed.jpg","2026-04-10-1832-5ab5c23e.jpg","2026-04-10-1836-96729565.jpg","2026-04-10-1842-61fac197.jpg"])}
+  {id: "2026-05-04", date: "2026-05-04", title: "4 May", body: "", photos: shots("4 May 2026", ["2026-05-04-1638-4dddec5c.jpg"])},
+  {id: "2026-04-22", date: "2026-04-22", title: "22 April", body: "", photos: shots("22 April 2026", ["2026-04-22-1737-7f3571b8.jpg","2026-04-22-1739-f248356e.jpg"])},
+  {id: "2026-04-16", date: "2026-04-16", title: "16 April", body: "", photos: shots("16 April 2026", ["2026-04-16-1633-6ba79133.jpg"])},
+  {id: "2026-04-13", date: "2026-04-13", title: "13 April", body: "", photos: shots("13 April 2026", ["2026-04-13-1800-4e035ab5.jpg","2026-04-13-1813-2ca1327c.jpg","2026-04-13-1816-3693a298.jpg"])},
+  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1729-73dd99ed.jpg","2026-04-10-1732-5ab5c23e.jpg","2026-04-10-1732-d99889c4.jpg","2026-04-10-1736-96729565.jpg","2026-04-10-1742-61fac197.jpg"])}
 ];
 
 export const sources = {
@@ -419,7 +420,7 @@ export function parsePath(pathname: string): Route {
     return {view: "issues", id: Math.min(21, Math.max(1, id))};
   }
   if (view === "diary") {
-    return {view: "diary", id: raw || diary[0]?.id || ""};
+    return {view: "diary", id: parts.slice(1).join("/")};
   }
   if (view === "faq") {
     return {view: "faq"};

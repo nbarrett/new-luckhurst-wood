@@ -8,8 +8,8 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const dropDir = join(root, "public/photos");
 const diaryDir = join(root, "public/assets/diary");
 const contentPath = join(root, "src/content.ts");
-const maxEdge = 1600;
-const jpegQuality = "80";
+const maxEdge = 2560;
+const jpegQuality = "88";
 
 mkdirSync(dropDir, {recursive: true});
 mkdirSync(diaryDir, {recursive: true});
@@ -93,23 +93,32 @@ function dropFiles() {
 function ingestDrop() {
   const ids = diaryIds();
   const added = [];
-  const skipped = [];
+  const replaced = [];
   for (const src of dropFiles()) {
     const id = uuid8(src.split("/").pop());
-    if (ids.has(id)) {
-      skipped.push(src);
-      unlinkSync(src);
-      continue;
-    }
     const destName = stamp(creationDate(src), id);
     const dest = join(diaryDir, destName);
+    const previous = ids.get(id);
+    if (previous && previous !== destName) {
+      const oldPath = join(diaryDir, previous);
+      try {
+        unlinkSync(oldPath);
+      } catch {
+        /* old name already gone */
+      }
+    }
     convertToJpeg(src, dest);
     ids.set(id, destName);
-    added.push(destName);
     unlinkSync(src);
-    console.log(`added ${destName}`);
+    if (previous) {
+      replaced.push(destName);
+      console.log(`replaced ${destName}`);
+    } else {
+      added.push(destName);
+      console.log(`added ${destName}`);
+    }
   }
-  return {added, skipped};
+  return {added, replaced};
 }
 
 function shrinkDiary() {
@@ -123,7 +132,7 @@ function shrinkDiary() {
     const info = sips(["-g", "pixelWidth", "-g", "pixelHeight", path]);
     const width = Number((info.match(/pixelWidth:\s+(\d+)/) || [])[1] || 0);
     const height = Number((info.match(/pixelHeight:\s+(\d+)/) || [])[1] || 0);
-    if (width <= maxEdge && height <= maxEdge && before < 450_000) {
+    if (width <= maxEdge && height <= maxEdge) {
       continue;
     }
     const tmp = join(tmpdir(), `luckhurst-shrink-${name}`);
@@ -190,5 +199,5 @@ const drop = ingestDrop();
 const shrunk = shrinkDiary();
 const written = rewriteContent();
 console.log(
-  `done added=${drop.added.length} skipped=${drop.skipped.length} shrunk=${shrunk} days=${written.days} photos=${written.photos}`
+  `done added=${drop.added.length} replaced=${drop.replaced.length} shrunk=${shrunk} days=${written.days} photos=${written.photos}`
 );

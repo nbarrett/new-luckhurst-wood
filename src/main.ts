@@ -238,10 +238,60 @@ function issuesView(id: number): string {
     </div>`;
 }
 
+function fileStem(src: string): string {
+  const file = src.split("/").pop() ?? "";
+  return file.replace(/\.jpe?g$/i, "");
+}
+
+function timeSlug(stem: string): string {
+  const match = stem.match(/^(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})/);
+  if (!match) {
+    return stem;
+  }
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function normaliseDiaryId(id: string): string {
+  const slash = id.match(/^(\d{4}-\d{2}-\d{2})\/(\d{2})(\d{2})(?:-(\d+))?$/);
+  if (slash) {
+    const extra = slash[4] ? `-${slash[4]}` : "";
+    return `${slash[1]}-${slash[2]}-${slash[3]}${extra}`;
+  }
+  const compact = id.match(/^(\d{4}-\d{2}-\d{2})-(\d{4})(?:-(\d+))?$/);
+  if (compact && !id.match(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}/)) {
+    const extra = compact[3] ? `-${compact[3]}` : "";
+    return `${compact[1]}-${compact[2].slice(0, 2)}-${compact[2].slice(2)}${extra}`;
+  }
+  return id;
+}
+
 const film = diary
   .slice()
   .reverse()
-  .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})));
+  .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})))
+  .reduce<{src: string; alt: string; date: string; day: string; slug: string}[]>((acc, shot) => {
+    const base = timeSlug(fileStem(shot.src));
+    const used = acc.filter((item) => item.slug === base || item.slug.startsWith(`${base}-`)).length;
+    const slug = used === 0 ? base : `${base}-${used + 1}`;
+    return [...acc, {...shot, slug}];
+  }, []);
+
+function filmIndexFor(id: string): number {
+  const wanted = normaliseDiaryId(id);
+  const bySlug = film.findIndex((p) => p.slug === wanted || p.slug === id);
+  if (bySlug >= 0) {
+    return bySlug;
+  }
+  const byStem = film.findIndex((p) => fileStem(p.src) === id);
+  if (byStem >= 0) {
+    return byStem;
+  }
+  const byDate = film.findIndex((p) => p.date === id);
+  if (byDate >= 0) {
+    return byDate;
+  }
+  return 0;
+}
 
 function shortDiaryDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -304,11 +354,12 @@ function fillScrubLabels(goIndex: (i: number) => void): void {
   });
 }
 
-function diaryView(_id: string): string {
+function diaryView(id: string): string {
+  const start = film[filmIndexFor(id)] ?? film[0];
   const slides = film
     .map(
       (p, idx) => `
-      <figure class="slide" data-i="${idx}" data-date="${p.date}">
+      <figure class="slide" data-i="${idx}" data-date="${p.date}" data-slug="${p.slug}">
         <img src="${p.src}" alt="${p.alt}" draggable="false">
       </figure>`
     )
@@ -325,8 +376,8 @@ function diaryView(_id: string): string {
     <div class="cinema">
       <div class="cinema-meta">
         <p class="cinema-kicker">Neighbour diary · Smarden</p>
-        <p class="cinema-date" id="cinema-date">${formatDiaryDate(film[0].date)}</p>
-        <p class="cinema-count" id="cinema-count">1 / ${film.length}</p>
+        <p class="cinema-date" id="cinema-date">${formatDiaryDate(start.date)}</p>
+        <p class="cinema-count" id="cinema-count">${filmIndexFor(id) + 1} / ${film.length}</p>
       </div>
       <button type="button" class="cinema-arrow left" id="cinema-prev" aria-label="Earlier">‹</button>
       <button type="button" class="cinema-arrow right" id="cinema-next" aria-label="Later">›</button>
@@ -387,12 +438,14 @@ function render(route: Route): string {
 let diaryKeys: ((e: KeyboardEvent) => void) | undefined;
 let diaryResize: (() => void) | undefined;
 
-function bindDiaryStage(): void {
+function bindDiaryStage(startId: string): void {
   const track = document.querySelector<HTMLElement>("#cinema-track");
   const strip = document.querySelector<HTMLElement>("#cinema-film");
   const dateEl = document.querySelector<HTMLElement>("#cinema-date");
   const countEl = document.querySelector<HTMLElement>("#cinema-count");
-  if (!track || !strip || !dateEl || !countEl) return;
+  if (!track || !strip || !dateEl || !countEl) {
+    return;
+  }
   const slides = Array.from(strip.querySelectorAll<HTMLElement>(".slide"));
   let x = 0;
   let vx = 0;
@@ -419,7 +472,9 @@ function bindDiaryStage(): void {
       }
     });
     const shot = film[best];
-    if (!shot) return;
+    if (!shot) {
+      return;
+    }
     dateEl.textContent = formatDiaryDate(shot.date);
     countEl.textContent = `${best + 1} / ${film.length}`;
     document.querySelectorAll(".tick").forEach((t) => {
@@ -431,6 +486,11 @@ function bindDiaryStage(): void {
     const pct = limit === 0 ? 0 : Math.min(100, (-x / limit) * 100);
     if (fill) fill.style.width = `${pct}%`;
     if (knob) knob.style.left = `${pct}%`;
+    const path = to(`/diary/${shot.slug}`);
+    if (location.pathname !== path) {
+      history.replaceState(null, "", path);
+    }
+    document.title = `${formatDiaryDate(shot.date)} · New Luckhurst Wood`;
   };
 
   const nudge = (dx: number): void => {
@@ -538,7 +598,7 @@ function bindDiaryStage(): void {
   };
   window.addEventListener("luckhurst-width", diaryResize);
   window.addEventListener("resize", diaryResize);
-  apply();
+  goIndex(filmIndexFor(startId));
 }
 
 function consumeLegacyHash(): void {
@@ -553,7 +613,9 @@ function paint(): void {
   app.innerHTML = render(route);
   const mapEl = document.querySelector<HTMLElement>("#map");
   if (mapEl) mountMap(mapEl);
-  bindDiaryStage();
+  if (route.view === "diary") {
+    bindDiaryStage(route.id);
+  }
   document.getElementById("width-toggle")?.addEventListener("click", () => {
     applyWidth(!isFullWidth());
     const btn = document.getElementById("width-toggle");

@@ -16,7 +16,7 @@ Drop phone photos (JPEG or HEIC) into `public/photos/`, then:
 npm run photos
 ```
 
-That converts them, skips duplicates, shrinks to 1600px JPEG, names them `YYYY-MM-DD-HHMM-uuid8.jpg` under `public/assets/diary/`, updates `src/content.ts`, and empties the drop folder. Existing captions stay. Write a short `body` on a day in `content.ts` if you want a sentence under the date.
+That converts them, shrinks to 2560px JPEG, names them `YYYY-MM-DD-HHMM-uuid8.jpg` under `public/assets/diary/`, updates `src/content.ts`, and empties the drop folder. A file whose id is already in the diary is re-exported from the original (so a second drop replaces a soft copy). Existing captions stay. Write a short `body` on a day in `content.ts` if you want a sentence under the date.
 
 ## Local preview
 
