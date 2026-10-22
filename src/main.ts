@@ -45,7 +45,7 @@ function chrome(route: Route, body: string): string {
     <header class="topbar">
       <div class="bar-inner">
         <a class="brand" href="${to("/")}">
-          <img class="logo" src="${asset("assets/fe-logo.png")}" alt="Forestry England" width="218" height="80">
+          <img class="logo" src="${asset("assets/fe-logo.png")}" alt="Forestry England" width="109" height="40">
           <span class="site-name">New Luckhurst Wood</span>
         </a>
         <nav aria-label="Primary">
@@ -462,6 +462,7 @@ function bindDiaryStage(startId: string): void {
   let raf = 0;
   let dragDist = 0;
   let current = filmIndexFor(startId);
+  let followStart = true;
 
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
@@ -513,12 +514,16 @@ function bindDiaryStage(startId: string): void {
   };
 
   const nudge = (dx: number): void => {
+    followStart = false;
     x += dx;
     apply();
   };
 
-  const goIndex = (i: number): void => {
-    const n = Math.max(0, Math.min(slides.length - 1, i));
+  const goIndex = (i: number, keepStart = false): void => {
+    if (!keepStart) {
+      followStart = false;
+    }
+    const n = followStart ? filmIndexFor(startId) : Math.max(0, Math.min(slides.length - 1, i));
     current = n;
     const slide = slides[n];
     const mid = track.clientWidth / 2;
@@ -547,6 +552,7 @@ function bindDiaryStage(startId: string): void {
   };
 
   track.addEventListener("pointerdown", (e) => {
+    followStart = false;
     dragging = true;
     last = e.clientX;
     vx = 0;
@@ -627,6 +633,7 @@ function bindDiaryStage(startId: string): void {
       apply();
     };
     scrub.addEventListener("pointerdown", (e) => {
+      followStart = false;
       scrubbing = true;
       scrub.setPointerCapture(e.pointerId);
       fromPointer(e.clientX);
@@ -645,10 +652,12 @@ function bindDiaryStage(startId: string): void {
     if (!document.querySelector("#cinema-track")) return;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
+      followStart = false;
       nudge(-Math.round(track.clientWidth * 0.55));
     }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
+      followStart = false;
       nudge(Math.round(track.clientWidth * 0.55));
     }
   };
@@ -659,28 +668,23 @@ function bindDiaryStage(startId: string): void {
   }
   diaryResize = () => {
     fillScrubLabels(goIndex);
-    apply();
+    goIndex(current);
   };
   window.addEventListener("luckhurst-width", diaryResize);
   window.addEventListener("resize", diaryResize);
 
   const start = filmIndexFor(startId);
-  const images = Array.from(strip.querySelectorAll("img"));
-  Promise.all(
-    images.map((img) => {
-      if (img.complete && img.naturalWidth > 0) {
-        return Promise.resolve();
-      }
-      return img.decode().catch(
-        () =>
-          new Promise<void>((resolve) => {
-            img.addEventListener("load", () => resolve(), {once: true});
-            img.addEventListener("error", () => resolve(), {once: true});
-          })
-      );
-    })
-  ).then(() => {
-    requestAnimationFrame(() => goIndex(start));
+  const place = (): void => {
+    goIndex(followStart ? start : current, true);
+  };
+  place();
+  requestAnimationFrame(place);
+  Array.from(strip.querySelectorAll("img")).forEach((img) => {
+    if (img.complete && img.naturalWidth > 0) {
+      return;
+    }
+    img.addEventListener("load", place, {once: true});
+    img.addEventListener("error", place, {once: true});
   });
 }
 

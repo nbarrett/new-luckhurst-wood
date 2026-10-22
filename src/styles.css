@@ -78,8 +78,9 @@ img {
 }
 
 .logo {
-  height: 80px;
+  height: 40px;
   width: auto;
+  max-width: none;
   display: block;
 }
 
