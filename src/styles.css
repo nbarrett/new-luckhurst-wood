@@ -435,6 +435,25 @@ body:has(.cinema) footer {
 
 body:has(.cinema) {
   background: var(--fe-paper);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body:has(.cinema) #app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+body:has(.cinema) .topbar {
+  flex-shrink: 0;
+}
+
+body:has(.cinema) #main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 html.full-width body:has(.cinema) {
@@ -443,6 +462,10 @@ html.full-width body:has(.cinema) {
 
 .cinema {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   width: min(var(--page-max), calc(100% - 2 * var(--page-pad)));
   margin: 0 auto;
   background: #101410;
@@ -484,7 +507,8 @@ html.full-width .cinema {
 }
 
 .cinema-track {
-  height: calc(100dvh - 200px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
@@ -552,6 +576,7 @@ html.full-width .slide img {
 .cinema-bar {
   position: relative;
   z-index: 5;
+  flex-shrink: 0;
   padding: 16px 28px 22px;
   background: var(--fe-green);
   color: #fff;
@@ -721,7 +746,8 @@ footer a {
   }
 
   .cinema-track {
-    height: calc(100dvh - 188px);
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .cinema-film {
