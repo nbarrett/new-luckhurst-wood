@@ -45,7 +45,7 @@ function chrome(route: Route, body: string): string {
     <header class="topbar">
       <div class="bar-inner">
         <a class="brand" href="${to("/")}">
-          <img class="logo" src="${asset("assets/fe-logo.png")}" alt="Forestry England" width="109" height="40">
+          <img class="logo" src="${asset("assets/fe-logo.png")}" alt="Forestry England" width="218" height="80">
           <span class="site-name">New Luckhurst Wood</span>
         </a>
         <nav aria-label="Primary">
