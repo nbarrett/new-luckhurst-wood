@@ -479,7 +479,7 @@ html.full-width .cinema {
 
 .cinema-meta {
   position: absolute;
-  top: 20px;
+  top: 36px;
   left: 24px;
   z-index: 3;
   pointer-events: none;
@@ -496,7 +496,7 @@ html.full-width .cinema {
 }
 
 .cinema-date {
-  margin: 4px 0 0;
+  margin: 10px 0 0;
   font-family: Ubuntu, sans-serif;
   font-size: clamp(1.6rem, 4vw, 2.6rem);
   font-weight: 700;
