@@ -1,8 +1,10 @@
+import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {copyFileSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {extname, join} from "node:path";
+import {join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {PREFIX, siteAwsEnv} from "./s3-env.mjs";
 
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const dropDir = join(root, "public/photos");
@@ -15,9 +17,11 @@ mkdirSync(dropDir, {recursive: true});
 mkdirSync(diaryDir, {recursive: true});
 
 function uuid8(name) {
-  const stem = name.replace(/\.[^.]+$/, "");
-  const first = stem.split("_")[0];
-  return first.replace(/-/g, "").toLowerCase().slice(0, 8);
+  const fromStamp = name.match(/-([0-9a-f]{8})(?:\.[^.]+)?$/i);
+  if (fromStamp) {
+    return fromStamp[1].toLowerCase();
+  }
+  return createHash("sha1").update(name).digest("hex").slice(0, 8);
 }
 
 function sips(args) {
@@ -85,7 +89,8 @@ function diaryIds() {
 
 function dropFiles() {
   return readdirSync(dropDir)
-    .filter((name) => name !== ".gitkeep" && name !== ".DS_Store")
+    .filter((name) => name !== ".gitkeep" && name !== ".DS_Store" && !name.startsWith("."))
+    .filter((name) => /\.(jpe?g|heic|png|webp|tif|tiff)$/i.test(name))
     .map((name) => join(dropDir, name))
     .filter((path) => statSync(path).isFile());
 }
@@ -110,6 +115,7 @@ function ingestDrop() {
     convertToJpeg(src, dest);
     ids.set(id, destName);
     unlinkSync(src);
+    uploadDiaryFile(dest);
     if (previous) {
       replaced.push(destName);
       console.log(`replaced ${destName}`);
@@ -119,6 +125,28 @@ function ingestDrop() {
     }
   }
   return {added, replaced};
+}
+
+function uploadDiaryFile(path) {
+  const aws = siteAwsEnv();
+  if (!aws.AWS_ACCESS_KEY_ID || !aws.AWS_SECRET_ACCESS_KEY) {
+    throw new Error("Missing site AWS credentials in .env — run npm run photos:setup-s3");
+  }
+  const name = path.split("/").pop();
+  execFileSync(
+    "aws",
+    [
+      "s3",
+      "cp",
+      path,
+      `s3://${aws.AWS_BUCKET}/${PREFIX}/${name}`,
+      "--content-type",
+      "image/jpeg",
+      "--cache-control",
+      "public, max-age=31536000, immutable"
+    ],
+    {encoding: "utf8", env: {...process.env, ...aws}, stdio: ["ignore", "pipe", "pipe"]}
+  );
 }
 
 function shrinkDiary() {
@@ -184,6 +212,10 @@ function rewriteContent() {
     byDate.set(match[1], list);
   }
   const dates = [...byDate.keys()].sort().reverse();
+  if (dates.length === 0) {
+    console.log("no local diary files — left src/content.ts unchanged");
+    return {days: 0, photos: 0};
+  }
   const entries = dates.map((iso) => {
     const cap = captions.get(iso) || {title: titleFor(iso), body: ""};
     const files = byDate.get(iso).map((file) => `"${file}"`).join(",");

@@ -7,6 +7,9 @@
     "build": "tsc --noEmit && vite build",
     "dev": "vite --host 0.0.0.0",
     "photos": "node scripts/ingest-photos.mjs",
+    "photos:from-album": "node scripts/export-luckhurst-album.mjs && node scripts/ingest-photos.mjs",
+    "photos:setup-s3": "node scripts/setup-s3.mjs",
+    "photos:push": "node scripts/push-diary-s3.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

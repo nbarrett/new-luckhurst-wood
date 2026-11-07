@@ -1,0 +1,23 @@
+name: Check diary S3
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    environment: diary
+    steps:
+      - name: Count diary objects
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+        run: |
+          count=$(aws s3 ls "s3://${AWS_BUCKET}/diary/" | wc -l | tr -d ' ')
+          echo "diary objects=${count}"
+          test "$count" -gt 0
