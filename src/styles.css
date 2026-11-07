@@ -732,10 +732,11 @@ footer a {
   }
 
   .width-toggle {
-    margin-left: 0;
-    flex: 0 0 auto;
-    padding: 8px 10px;
-    font-size: 0.85rem;
+    display: none;
+  }
+
+  html {
+    --page-max: 100%;
   }
 
   body:has(.cinema) nav {

@@ -26,14 +26,26 @@ function asset(file: string): string {
 }
 
 const WIDTH_KEY = "luckhurst-page-width";
+const NARROW = "(max-width: 860px)";
+
+function isNarrow(): boolean {
+  return window.matchMedia(NARROW).matches;
+}
+
+function storedFullWidth(): boolean {
+  return localStorage.getItem(WIDTH_KEY) !== "readable";
+}
 
 function isFullWidth(): boolean {
   return document.documentElement.classList.contains("full-width");
 }
 
 function applyWidth(full: boolean): void {
-  document.documentElement.classList.toggle("full-width", full);
-  localStorage.setItem(WIDTH_KEY, full ? "full" : "readable");
+  const useFull = isNarrow() || full;
+  document.documentElement.classList.toggle("full-width", useFull);
+  if (!isNarrow()) {
+    localStorage.setItem(WIDTH_KEY, full ? "full" : "readable");
+  }
   window.dispatchEvent(new Event("luckhurst-width"));
 }
 
@@ -58,9 +70,13 @@ function chrome(route: Route, body: string): string {
           ${navLink(to("/faq"), "FAQ", view === "faq")}
           ${navLink(to("/sources"), "Sources", view === "sources")}
         </nav>
-        <button type="button" class="width-toggle" id="width-toggle" aria-pressed="${full}">
+        ${
+          isNarrow()
+            ? ""
+            : `<button type="button" class="width-toggle" id="width-toggle" aria-pressed="${full}">
           ${full ? "Readable width" : "Full width"}
-        </button>
+        </button>`
+        }
       </div>
     </header>
     <div id="main">${body}</div>
@@ -784,7 +800,11 @@ document.addEventListener("click", (event) => {
   }
 });
 
-applyWidth(localStorage.getItem(WIDTH_KEY) !== "readable");
+applyWidth(storedFullWidth());
+window.matchMedia(NARROW).addEventListener("change", () => {
+  applyWidth(storedFullWidth());
+  paint();
+});
 consumeLegacyHash();
 window.addEventListener("popstate", paint);
 paint();
