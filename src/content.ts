@@ -78,7 +78,7 @@ export const diary: DiaryEntry[] = [
   {id: "2026-04-22", date: "2026-04-22", title: "22 April", body: "", photos: shots("22 April 2026", ["2026-04-22-1737-7f3571b8.jpg","2026-04-22-1739-f248356e.jpg"])},
   {id: "2026-04-16", date: "2026-04-16", title: "16 April", body: "", photos: shots("16 April 2026", ["2026-04-16-1633-6ba79133.jpg"])},
   {id: "2026-04-13", date: "2026-04-13", title: "13 April", body: "", photos: shots("13 April 2026", ["2026-04-13-1800-4e035ab5.jpg","2026-04-13-1813-2ca1327c.jpg","2026-04-13-1816-3693a298.jpg"])},
-  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1729-3d9297b9.jpg","2026-04-10-1732-d99889c4.jpg","2026-04-10-1736-aed11583.jpg","2026-04-10-1742-3782a27a.jpg"])}
+  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1732-d99889c4.jpg","2026-04-10-1742-3782a27a.jpg"])}
 ];
 
 export const sources = {
