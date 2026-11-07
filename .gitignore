@@ -7,3 +7,4 @@ public/photos/*
 !public/photos/.gitkeep
 public/assets/diary/*
 !public/assets/diary/.gitkeep
+public/assets/diary-fit/

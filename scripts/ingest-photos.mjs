@@ -11,7 +11,9 @@ const dropDir = join(root, "public/photos");
 const diaryDir = join(root, "public/assets/diary");
 const contentPath = join(root, "src/content.ts");
 const maxEdge = 2560;
+const fitEdge = 1600;
 const jpegQuality = "88";
+const fitQuality = "78";
 
 mkdirSync(dropDir, {recursive: true});
 mkdirSync(diaryDir, {recursive: true});
@@ -70,10 +72,14 @@ function stamp(date, id) {
   return `${y}-${m}-${d}-${hh}${mm}-${id}.jpg`;
 }
 
-function convertToJpeg(src, dest) {
+function convertToJpeg(src, dest, edge = maxEdge, quality = jpegQuality) {
   const tmp = join(tmpdir(), `luckhurst-${Math.random().toString(16).slice(2)}.jpg`);
-  sips(["-s", "format", "jpeg", "-s", "formatOptions", jpegQuality, "-Z", String(maxEdge), src, "--out", tmp]);
+  sips(["-s", "format", "jpeg", "-s", "formatOptions", quality, "-Z", String(edge), src, "--out", tmp]);
   renameSync(tmp, dest);
+}
+
+function makeFit(fullPath, dest) {
+  convertToJpeg(fullPath, dest, fitEdge, fitQuality);
 }
 
 function diaryIds() {
@@ -127,19 +133,18 @@ function ingestDrop() {
   return {added, replaced};
 }
 
-function uploadDiaryFile(path) {
+function putS3(localPath, key) {
   const aws = siteAwsEnv();
   if (!aws.AWS_ACCESS_KEY_ID || !aws.AWS_SECRET_ACCESS_KEY) {
     throw new Error("Missing site AWS credentials in .env — run npm run photos:setup-s3");
   }
-  const name = path.split("/").pop();
   execFileSync(
     "aws",
     [
       "s3",
       "cp",
-      path,
-      `s3://${aws.AWS_BUCKET}/${PREFIX}/${name}`,
+      localPath,
+      `s3://${aws.AWS_BUCKET}/${key}`,
       "--content-type",
       "image/jpeg",
       "--cache-control",
@@ -147,6 +152,15 @@ function uploadDiaryFile(path) {
     ],
     {encoding: "utf8", env: {...process.env, ...aws}, stdio: ["ignore", "pipe", "pipe"]}
   );
+}
+
+function uploadDiaryFile(path) {
+  const name = path.split("/").pop();
+  putS3(path, `${PREFIX}/${name}`);
+  const fit = join(tmpdir(), `luckhurst-fit-${name}`);
+  makeFit(path, fit);
+  putS3(fit, `${PREFIX}/fit/${name}`);
+  unlinkSync(fit);
 }
 
 function shrinkDiary() {

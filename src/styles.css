@@ -535,21 +535,29 @@ html.full-width .cinema {
   flex: 0 0 auto;
   margin: 0;
   height: 52vh;
+  width: calc(52vh * 4 / 3);
+  overflow: hidden;
+  background: #161c18;
 }
 
 .slide img {
-  height: 52vh;
-  width: auto;
+  height: 100%;
+  width: 100%;
   max-width: none;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   pointer-events: none;
   -webkit-user-drag: none;
+  background: #161c18;
 }
 
-html.full-width .slide,
-html.full-width .slide img {
+html.full-width .slide {
   height: 72vh;
+  width: calc(72vh * 4 / 3);
+}
+
+html.full-width .slide img {
+  height: 100%;
 }
 
 .cinema-arrow {
@@ -701,14 +709,37 @@ footer a {
     grid-template-columns: 1fr;
   }
 
-  .topbar {
-    flex-direction: column;
-    align-items: stretch;
+  .logo {
+    height: 44px;
+  }
+
+  .bar-inner {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    width: 100%;
+  }
+
+  .brand {
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 10px;
+  }
+
+  .site-name {
+    font-size: 0.92rem;
+    padding-left: 10px;
   }
 
   .width-toggle {
     margin-left: 0;
-    align-self: flex-start;
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  body:has(.cinema) nav {
+    display: none;
   }
 
   nav {
@@ -756,11 +787,16 @@ footer a {
     gap: 10px;
   }
 
-  .slide,
+  .slide {
+    height: min(52vh, calc(100dvh - 280px));
+    width: min(calc(100vw - 24px), calc(min(52vh, calc(100dvh - 280px)) * 4 / 3));
+  }
+
   .slide img {
-    height: min(58vh, calc(100dvh - 220px));
-    max-width: calc(100vw - 16px);
-    object-fit: cover;
+    height: 100%;
+    width: 100%;
+    max-width: none;
+    object-fit: contain;
   }
 
   .cinema-bar {

@@ -368,7 +368,7 @@ function diaryView(id: string): string {
     .map(
       (p, idx) => `
       <figure class="slide" data-i="${idx}" data-date="${p.date}" data-slug="${p.slug}">
-        <img src="${p.src}" alt="${p.alt}" draggable="false">
+        <img data-src="${p.src}" alt="${p.alt}" draggable="false" decoding="async">
       </figure>`
     )
     .join("");
@@ -464,6 +464,50 @@ function bindDiaryStage(startId: string): void {
   let current = filmIndexFor(startId);
   let followStart = true;
 
+  const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 1 : 2);
+
+  const sizeSlide = (img: HTMLImageElement): void => {
+    if (!img.naturalWidth || !img.naturalHeight) {
+      return;
+    }
+    const slide = img.closest(".slide");
+    if (!(slide instanceof HTMLElement)) {
+      return;
+    }
+    const height = slide.clientHeight || img.clientHeight;
+    if (!height) {
+      return;
+    }
+    slide.style.width = `${Math.round(height * (img.naturalWidth / img.naturalHeight))}px`;
+  };
+
+  const hydrate = (center: number): void => {
+    const span = nearbyCount();
+    slides.forEach((slide, i) => {
+      const img = slide.querySelector<HTMLImageElement>("img");
+      const url = img?.dataset.src;
+      if (!img || !url) {
+        return;
+      }
+      const want = Math.abs(i - center) <= span;
+      if (want) {
+        if (img.getAttribute("src") !== url) {
+          img.addEventListener(
+            "load",
+            () => {
+              sizeSlide(img);
+              goIndex(followStart ? filmIndexFor(startId) : current, true);
+            },
+            {once: true}
+          );
+          img.src = url;
+        }
+      } else if (img.hasAttribute("src")) {
+        img.removeAttribute("src");
+      }
+    });
+  };
+
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
   const apply = (): void => {
@@ -491,6 +535,7 @@ function bindDiaryStage(startId: string): void {
       best = current;
     }
     current = best;
+    hydrate(best);
     const shot = film[best];
     if (!shot) {
       return;
@@ -525,6 +570,7 @@ function bindDiaryStage(startId: string): void {
     }
     const n = followStart ? filmIndexFor(startId) : Math.max(0, Math.min(slides.length - 1, i));
     current = n;
+    hydrate(n);
     const slide = slides[n];
     const mid = track.clientWidth / 2;
     x = -(slide.offsetLeft + slide.offsetWidth / 2 - mid);
@@ -679,13 +725,6 @@ function bindDiaryStage(startId: string): void {
   };
   place();
   requestAnimationFrame(place);
-  Array.from(strip.querySelectorAll("img")).forEach((img) => {
-    if (img.complete && img.naturalWidth > 0) {
-      return;
-    }
-    img.addEventListener("load", place, {once: true});
-    img.addEventListener("error", place, {once: true});
-  });
 }
 
 function consumeLegacyHash(): void {

@@ -25,7 +25,7 @@ export const diaryPhotoBase = "https://nbarrett-luckhurst-wood.s3.eu-west-1.amaz
 
 function shots(date: string, files: string[]): DiaryPhoto[] {
   return files.map((file) => ({
-    src: `${diaryPhotoBase}/${file}`,
+    src: `${diaryPhotoBase}/fit/${file}`,
     alt: `New Luckhurst Wood, ${date}`
   }));
 }

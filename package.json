@@ -10,6 +10,7 @@
     "photos:from-album": "node scripts/export-luckhurst-album.mjs && node scripts/ingest-photos.mjs",
     "photos:setup-s3": "node scripts/setup-s3.mjs",
     "photos:push": "node scripts/push-diary-s3.mjs",
+    "photos:fit": "node scripts/make-diary-fit.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
