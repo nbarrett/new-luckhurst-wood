@@ -25,33 +25,20 @@ function asset(file: string): string {
   return `${import.meta.env.BASE_URL}${file.replace(/^\.\//, "")}`;
 }
 
-const WIDTH_KEY = "luckhurst-page-width";
 const NARROW = "(max-width: 860px)";
 
 function isNarrow(): boolean {
   return window.matchMedia(NARROW).matches;
 }
 
-function storedFullWidth(): boolean {
-  return localStorage.getItem(WIDTH_KEY) !== "readable";
-}
-
-function isFullWidth(): boolean {
-  return document.documentElement.classList.contains("full-width");
-}
-
-function applyWidth(full: boolean): void {
-  const useFull = isNarrow() || full;
-  document.documentElement.classList.toggle("full-width", useFull);
-  if (!isNarrow()) {
-    localStorage.setItem(WIDTH_KEY, full ? "full" : "readable");
-  }
+function applyWidth(route: Route): void {
+  const full = isNarrow() || route.view === "diary";
+  document.documentElement.classList.toggle("full-width", full);
   window.dispatchEvent(new Event("luckhurst-width"));
 }
 
 function chrome(route: Route, body: string): string {
   const view = route.view;
-  const full = isFullWidth();
   return `
     <a class="skip" href="#main">Skip to content</a>
     <header class="topbar">
@@ -70,13 +57,6 @@ function chrome(route: Route, body: string): string {
           ${navLink(to("/faq"), "FAQ", view === "faq")}
           ${navLink(to("/sources"), "Sources", view === "sources")}
         </nav>
-        ${
-          isNarrow()
-            ? ""
-            : `<button type="button" class="width-toggle" id="width-toggle" aria-pressed="${full}">
-          ${full ? "Readable width" : "Full width"}
-        </button>`
-        }
       </div>
     </header>
     <div id="main">${body}</div>
@@ -752,21 +732,13 @@ function consumeLegacyHash(): void {
 
 function paint(): void {
   const route = parsePath(location.pathname);
+  applyWidth(route);
   app.innerHTML = render(route);
   const mapEl = document.querySelector<HTMLElement>("#map");
   if (mapEl) mountMap(mapEl);
   if (route.view === "diary") {
     bindDiaryStage(route.id);
   }
-  document.getElementById("width-toggle")?.addEventListener("click", () => {
-    applyWidth(!isFullWidth());
-    const btn = document.getElementById("width-toggle");
-    if (btn) {
-      const full = isFullWidth();
-      btn.setAttribute("aria-pressed", String(full));
-      btn.textContent = full ? "Readable width" : "Full width";
-    }
-  });
   window.scrollTo(0, 0);
 }
 
@@ -800,9 +772,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-applyWidth(storedFullWidth());
 window.matchMedia(NARROW).addEventListener("change", () => {
-  applyWidth(storedFullWidth());
   paint();
 });
 consumeLegacyHash();

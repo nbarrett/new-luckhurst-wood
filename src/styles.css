@@ -96,6 +96,7 @@ nav {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  margin-left: auto;
 }
 
 nav a {
@@ -202,26 +203,6 @@ html.full-width .bar-inner {
 
 html.full-width .hero {
   min-height: 78vh;
-}
-
-.width-toggle {
-  margin-left: auto;
-  background: transparent;
-  color: var(--fe-green-dark);
-  border: 1px solid var(--fe-green);
-  border-radius: 0;
-  padding: 8px 14px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.width-toggle[aria-pressed="true"],
-.width-toggle:hover {
-  background: var(--fe-green);
-  color: #fff;
-  border-color: var(--fe-green);
 }
 
 .stats {
@@ -729,10 +710,6 @@ footer a {
   .site-name {
     font-size: 0.92rem;
     padding-left: 10px;
-  }
-
-  .width-toggle {
-    display: none;
   }
 
   html {
