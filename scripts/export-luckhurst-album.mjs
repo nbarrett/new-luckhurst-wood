@@ -51,6 +51,15 @@ end tell`
 );
 
 const known = diaryMinutes();
+const skipStamps = new Set([
+  "2026-04-10-1729",
+  "2026-04-10-1829",
+  "2026-04-10-1736",
+  "2026-04-10-1836",
+  "2026-08-08-1631",
+  "2026-08-08-1731"
+]);
+const skipNames = new Set(["IMG_5353.HEIC", "IMG_5356.HEIC", "IMG_6138.HEIC"]);
 const video = /\.(mov|mp4|m4v)$/i;
 const wanted = [];
 for (const line of listing.trim().split(/\r\n|\n|\r/)) {
@@ -58,7 +67,7 @@ for (const line of listing.trim().split(/\r\n|\n|\r/)) {
   if (!filename || video.test(filename)) {
     continue;
   }
-  if (known.has(stamp)) {
+  if (known.has(stamp) || skipStamps.has(stamp) || skipNames.has(filename)) {
     continue;
   }
   wanted.push({stamp, filename});
