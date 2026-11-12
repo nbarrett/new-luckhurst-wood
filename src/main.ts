@@ -461,21 +461,9 @@ function bindDiaryStage(startId: string): void {
   let followStart = true;
 
   const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 1 : 2);
-
-  const sizeSlide = (img: HTMLImageElement): void => {
-    if (!img.naturalWidth || !img.naturalHeight) {
-      return;
-    }
-    const slide = img.closest(".slide");
-    if (!(slide instanceof HTMLElement)) {
-      return;
-    }
-    const height = slide.clientHeight || img.clientHeight;
-    if (!height) {
-      return;
-    }
-    slide.style.width = `${Math.round(height * (img.naturalWidth / img.naturalHeight))}px`;
-  };
+  let interacting = false;
+  let applyRaf = 0;
+  let lastUrl = "";
 
   const hydrate = (center: number): void => {
     const span = nearbyCount();
@@ -488,14 +476,6 @@ function bindDiaryStage(startId: string): void {
       const want = Math.abs(i - center) <= span;
       if (want) {
         if (img.getAttribute("src") !== url) {
-          img.addEventListener(
-            "load",
-            () => {
-              sizeSlide(img);
-              goIndex(followStart ? filmIndexFor(startId) : current, true);
-            },
-            {once: true}
-          );
           img.src = url;
         }
       } else if (img.hasAttribute("src")) {
@@ -506,32 +486,23 @@ function bindDiaryStage(startId: string): void {
 
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
-  const apply = (): void => {
-    const limit = maxX();
-    if (limit > 0) {
-      if (x > 0) x = 0;
-      if (x < -limit) x = -limit;
-    }
-    strip.style.transform = `translate3d(${x}px, 0, 0)`;
-    const mid = track.getBoundingClientRect().left + track.clientWidth / 2;
+  const currentFromX = (): number => {
+    const mid = track.clientWidth / 2 - x;
     let best = 0;
     let bestDist = Infinity;
-    slides.forEach((s, i) => {
-      const r = s.getBoundingClientRect();
-      if (r.width < 8) {
-        return;
-      }
-      const d = Math.abs(r.left + r.width / 2 - mid);
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i];
+      const center = slide.offsetLeft + slide.offsetWidth / 2;
+      const d = Math.abs(center - mid);
       if (d < bestDist) {
         bestDist = d;
         best = i;
       }
-    });
-    if (bestDist === Infinity) {
-      best = current;
     }
-    current = best;
-    hydrate(best);
+    return best;
+  };
+
+  const paintChrome = (best: number, limit: number): void => {
     const shot = film[best];
     if (!shot) {
       return;
@@ -547,11 +518,40 @@ function bindDiaryStage(startId: string): void {
     const pct = limit === 0 ? 0 : Math.min(100, (-x / limit) * 100);
     if (fill) fill.style.width = `${pct}%`;
     if (knob) knob.style.left = `${pct}%`;
-    const path = to(`/diary/${shot.slug}`);
-    if (location.pathname !== path) {
-      history.replaceState(null, "", path);
+    if (!interacting) {
+      const path = to(`/diary/${shot.slug}`);
+      if (path !== lastUrl && location.pathname !== path) {
+        lastUrl = path;
+        history.replaceState(null, "", path);
+      }
+      document.title = `${formatDiaryDate(shot.date)} · New Luckhurst Wood`;
     }
-    document.title = `${formatDiaryDate(shot.date)} · New Luckhurst Wood`;
+  };
+
+  const apply = (): void => {
+    const limit = maxX();
+    if (limit > 0) {
+      if (x > 0) x = 0;
+      if (x < -limit) x = -limit;
+    }
+    strip.style.transform = `translate3d(${x}px, 0, 0)`;
+    const best = currentFromX();
+    const changed = best !== current;
+    current = best;
+    if (changed) {
+      hydrate(best);
+    }
+    paintChrome(best, limit);
+  };
+
+  const scheduleApply = (): void => {
+    if (applyRaf) {
+      return;
+    }
+    applyRaf = requestAnimationFrame(() => {
+      applyRaf = 0;
+      apply();
+    });
   };
 
   const nudge = (dx: number): void => {
@@ -570,32 +570,14 @@ function bindDiaryStage(startId: string): void {
     const slide = slides[n];
     const mid = track.clientWidth / 2;
     x = -(slide.offsetLeft + slide.offsetWidth / 2 - mid);
-    const shot = film[n];
     strip.style.transform = `translate3d(${x}px, 0, 0)`;
-    if (shot) {
-      dateEl.textContent = formatDiaryDate(shot.date);
-      countEl.textContent = `${n + 1} / ${film.length}`;
-      document.querySelectorAll(".tick").forEach((t) => {
-        const j = Number((t as HTMLElement).dataset.jump);
-        t.classList.toggle("on", film[j]?.date === shot.date);
-      });
-      const limit = maxX();
-      const fill = document.getElementById("scrub-fill");
-      const knob = document.getElementById("scrub-knob");
-      const pct = limit === 0 ? 0 : Math.min(100, (-x / limit) * 100);
-      if (fill) fill.style.width = `${pct}%`;
-      if (knob) knob.style.left = `${pct}%`;
-      const path = to(`/diary/${shot.slug}`);
-      if (location.pathname !== path) {
-        history.replaceState(null, "", path);
-      }
-      document.title = `${formatDiaryDate(shot.date)} · New Luckhurst Wood`;
-    }
+    paintChrome(n, maxX());
   };
 
   track.addEventListener("pointerdown", (e) => {
     followStart = false;
     dragging = true;
+    interacting = true;
     last = e.clientX;
     vx = 0;
     dragDist = 0;
@@ -611,7 +593,8 @@ function bindDiaryStage(startId: string): void {
     last = e.clientX;
     vx = dx;
     dragDist += Math.abs(dx);
-    nudge(dx);
+    x += dx;
+    scheduleApply();
   });
   const endDrag = (e: PointerEvent): void => {
     if (!dragging) {
@@ -621,27 +604,20 @@ function bindDiaryStage(startId: string): void {
     track.classList.remove("dragging");
     const slide = (e.target as Element | null)?.closest?.(".slide");
     if (dragDist < 12 && slide instanceof HTMLElement) {
+      interacting = false;
       goIndex(Number(slide.dataset.i));
       return;
     }
     const coast = (): void => {
       vx *= 0.94;
       if (Math.abs(vx) < 0.4) {
-        const mid = track.getBoundingClientRect().left + track.clientWidth / 2;
-        let best = 0;
-        let bestDist = Infinity;
-        slides.forEach((s, i) => {
-          const r = s.getBoundingClientRect();
-          const d = Math.abs(r.left + r.width / 2 - mid);
-          if (d < bestDist) {
-            bestDist = d;
-            best = i;
-          }
-        });
-        goIndex(best);
+        interacting = false;
+        hydrate(currentFromX());
+        apply();
         return;
       }
-      nudge(vx);
+      x += vx;
+      apply();
       raf = requestAnimationFrame(coast);
     };
     raf = requestAnimationFrame(coast);
@@ -672,11 +648,12 @@ function bindDiaryStage(startId: string): void {
       const rect = scrub.getBoundingClientRect();
       const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
       x = -ratio * maxX();
-      apply();
+      scheduleApply();
     };
     scrub.addEventListener("pointerdown", (e) => {
       followStart = false;
       scrubbing = true;
+      interacting = true;
       scrub.setPointerCapture(e.pointerId);
       fromPointer(e.clientX);
     });
@@ -684,9 +661,17 @@ function bindDiaryStage(startId: string): void {
       if (!scrubbing) return;
       fromPointer(e.clientX);
     });
-    scrub.addEventListener("pointerup", () => {
+    const endScrub = (): void => {
+      if (!scrubbing) {
+        return;
+      }
       scrubbing = false;
-    });
+      interacting = false;
+      hydrate(currentFromX());
+      apply();
+    };
+    scrub.addEventListener("pointerup", endScrub);
+    scrub.addEventListener("pointercancel", endScrub);
   }
 
   if (diaryKeys) window.removeEventListener("keydown", diaryKeys);
