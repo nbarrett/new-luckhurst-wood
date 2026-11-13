@@ -516,25 +516,25 @@ html.full-width .cinema {
   flex: 0 0 auto;
   margin: 0;
   height: 52vh;
-  width: calc(52vh * 4 / 3);
+  width: auto;
+  min-width: 36vh;
   overflow: hidden;
   background: #161c18;
 }
 
 .slide img {
   height: 100%;
-  width: 100%;
+  width: auto;
   max-width: none;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   pointer-events: none;
   -webkit-user-drag: none;
-  background: #161c18;
 }
 
 html.full-width .slide {
   height: 72vh;
-  width: calc(72vh * 4 / 3);
+  min-width: 48vh;
 }
 
 html.full-width .slide img {
@@ -767,14 +767,16 @@ footer a {
 
   .slide {
     height: min(52vh, calc(100dvh - 280px));
-    width: min(calc(100vw - 24px), calc(min(52vh, calc(100dvh - 280px)) * 4 / 3));
+    width: auto;
+    min-width: min(70vw, calc(min(52vh, calc(100dvh - 280px)) * 3 / 4));
+    max-width: calc(100vw - 24px);
   }
 
   .slide img {
     height: 100%;
-    width: 100%;
+    width: auto;
     max-width: none;
-    object-fit: contain;
+    object-fit: cover;
   }
 
   .cinema-bar {

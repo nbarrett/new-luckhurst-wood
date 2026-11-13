@@ -464,6 +464,27 @@ function bindDiaryStage(startId: string): void {
 
   const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 2 : 3);
 
+  const sizeSlide = (img: HTMLImageElement): void => {
+    if (!img.naturalWidth || !img.naturalHeight) {
+      return;
+    }
+    const slide = img.closest(".slide");
+    if (!(slide instanceof HTMLElement)) {
+      return;
+    }
+    const height = slide.clientHeight || img.clientHeight;
+    if (!height) {
+      return;
+    }
+    let width = Math.round(height * (img.naturalWidth / img.naturalHeight));
+    if (window.matchMedia("(max-width: 860px)").matches) {
+      width = Math.min(width, Math.max(120, window.innerWidth - 24));
+    }
+    slide.style.width = `${width}px`;
+    img.style.width = "100%";
+    img.style.height = "100%";
+  };
+
   const hydrate = (center: number): void => {
     const span = nearbyCount();
     slides.forEach((slide, i) => {
@@ -475,6 +496,17 @@ function bindDiaryStage(startId: string): void {
       const want = Math.abs(i - center) <= span;
       if (want) {
         if (img.getAttribute("src") !== url) {
+          img.addEventListener(
+            "load",
+            () => {
+              const anchor = slides[current] ?? slide;
+              const before = anchor.offsetLeft;
+              sizeSlide(img);
+              x -= anchor.offsetLeft - before;
+              strip.style.transform = `translate3d(${x}px, 0, 0)`;
+            },
+            {once: true}
+          );
           img.src = url;
         }
       } else if (img.hasAttribute("src")) {
@@ -486,14 +518,19 @@ function bindDiaryStage(startId: string): void {
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
   const currentFromX = (): number => {
-    if (slides.length === 0) {
-      return 0;
-    }
-    const first = slides[0];
-    const stride = slides.length > 1 ? slides[1].offsetLeft - first.offsetLeft : first.offsetWidth;
     const mid = -x + track.clientWidth / 2;
-    const i = Math.round((mid - first.offsetLeft - first.offsetWidth / 2) / Math.max(1, stride));
-    return Math.max(0, Math.min(slides.length - 1, i));
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i];
+      const center = slide.offsetLeft + slide.offsetWidth / 2;
+      const d = Math.abs(center - mid);
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    }
+    return best;
   };
 
   const paintChrome = (best: number): void => {
