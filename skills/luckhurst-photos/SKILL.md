@@ -1,11 +1,11 @@
 ---
 name: luckhurst-photos
-description: Sync New Luckhurst Wood diary stills from Apple Photos using on-site GPS and the Luckhurst album, then ingest to S3. Use when the user runs /luckhurst-photos, asks to sync the diary, pull new Luckhurst photos, ingest from Photos, or update the neighbour diary from Apple Photos.
+description: Sync New Luckhurst Wood diary stills from Apple Photos using on-site GPS and the Luckhurst album, then ingest to S3. Use when asked to sync the diary, pull new Luckhurst photos, ingest from Photos, run /luckhurst-photos, or update the neighbour diary from Apple Photos.
 ---
 
 # Luckhurst diary photo sync
 
-Run from the `new-luckhurst-wood` repo root. Do not push unless the user asks.
+Works in any agent. Run from the `new-luckhurst-wood` repo root. Do not push unless asked.
 
 ## Command
 
@@ -13,7 +13,7 @@ Run from the `new-luckhurst-wood` repo root. Do not push unless the user asks.
 npm run photos:sync
 ```
 
-That is `scripts/sync-luckhurst-photos.mjs` then `scripts/ingest-photos.mjs`.
+That is `scripts/sync-luckhurst-photos.mjs` then `scripts/ingest-photos.mjs`. Needs macOS, Photos, `sqlite3`, and AWS credentials in `.env`.
 
 ## What it selects
 
@@ -31,10 +31,10 @@ Many walks have no GPS. The album is still required.
 ## After ingest
 
 - Report added count, days, and newest date
-- Leave `src/content.ts` dirty for the user to review
+- Leave `src/content.ts` dirty for review
 - If new stills are close identifiable pictures of a child, list them and wait before they stay in the diary
-- Do not delete other photos unless the user names them
+- Do not delete other photos unless they are named
 
 ## Deleting
 
-Add the stamp and original filename to `scripts/diary-skip.mjs`, remove the JPEG from S3 (`diary/` and `diary/fit/`) and from the local diary cache, then ingest or edit `content.ts` so the day no longer lists the file.
+Add the stamp and original filename to `scripts/diary-skip.mjs`, remove the JPEG from S3 (`diary/` and `diary/fit/`) and from the local diary cache, then ingest or edit `src/content.ts` so the day no longer lists the file.
