@@ -1,15 +1,10 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import boundary from "./site-boundary.json";
 
 let map: L.Map | undefined;
 
-const site: L.LatLngExpression[] = [
-  [51.1238, 0.6895],
-  [51.1248, 0.6978],
-  [51.1212, 0.7004],
-  [51.1186, 0.6962],
-  [51.1194, 0.6888]
-];
+const site: L.LatLngExpression[] = boundary.polygon as L.LatLngExpression[];
 
 export function mountMap(el: HTMLElement): void {
   if (map) {

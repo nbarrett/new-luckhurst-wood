@@ -456,14 +456,13 @@ function bindDiaryStage(startId: string): void {
   let dragging = false;
   let last = 0;
   let raf = 0;
-  let dragDist = 0;
   let current = filmIndexFor(startId);
   let followStart = true;
-
-  const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 1 : 2);
   let interacting = false;
   let applyRaf = 0;
   let lastUrl = "";
+
+  const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 2 : 3);
 
   const hydrate = (center: number): void => {
     const span = nearbyCount();
@@ -487,22 +486,17 @@ function bindDiaryStage(startId: string): void {
   const maxX = (): number => Math.max(0, strip.scrollWidth - track.clientWidth);
 
   const currentFromX = (): number => {
-    const mid = track.clientWidth / 2 - x;
-    let best = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < slides.length; i++) {
-      const slide = slides[i];
-      const center = slide.offsetLeft + slide.offsetWidth / 2;
-      const d = Math.abs(center - mid);
-      if (d < bestDist) {
-        bestDist = d;
-        best = i;
-      }
+    if (slides.length === 0) {
+      return 0;
     }
-    return best;
+    const first = slides[0];
+    const stride = slides.length > 1 ? slides[1].offsetLeft - first.offsetLeft : first.offsetWidth;
+    const mid = -x + track.clientWidth / 2;
+    const i = Math.round((mid - first.offsetLeft - first.offsetWidth / 2) / Math.max(1, stride));
+    return Math.max(0, Math.min(slides.length - 1, i));
   };
 
-  const paintChrome = (best: number, limit: number): void => {
+  const paintChrome = (best: number): void => {
     const shot = film[best];
     if (!shot) {
       return;
@@ -513,6 +507,7 @@ function bindDiaryStage(startId: string): void {
       const j = Number((t as HTMLElement).dataset.jump);
       t.classList.toggle("on", film[j]?.date === shot.date);
     });
+    const limit = maxX();
     const fill = document.getElementById("scrub-fill");
     const knob = document.getElementById("scrub-knob");
     const pct = limit === 0 ? 0 : Math.min(100, (-x / limit) * 100);
@@ -541,7 +536,7 @@ function bindDiaryStage(startId: string): void {
     if (changed) {
       hydrate(best);
     }
-    paintChrome(best, limit);
+    paintChrome(best);
   };
 
   const scheduleApply = (): void => {
@@ -554,12 +549,6 @@ function bindDiaryStage(startId: string): void {
     });
   };
 
-  const nudge = (dx: number): void => {
-    followStart = false;
-    x += dx;
-    apply();
-  };
-
   const goIndex = (i: number, keepStart = false): void => {
     if (!keepStart) {
       followStart = false;
@@ -568,19 +557,20 @@ function bindDiaryStage(startId: string): void {
     current = n;
     hydrate(n);
     const slide = slides[n];
-    const mid = track.clientWidth / 2;
-    x = -(slide.offsetLeft + slide.offsetWidth / 2 - mid);
-    strip.style.transform = `translate3d(${x}px, 0, 0)`;
-    paintChrome(n, maxX());
+    x = -(slide.offsetLeft + slide.offsetWidth / 2 - track.clientWidth / 2);
+    apply();
   };
 
   track.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) {
+      return;
+    }
+    e.preventDefault();
     followStart = false;
     dragging = true;
     interacting = true;
     last = e.clientX;
     vx = 0;
-    dragDist = 0;
     track.setPointerCapture(e.pointerId);
     track.classList.add("dragging");
     cancelAnimationFrame(raf);
@@ -592,25 +582,18 @@ function bindDiaryStage(startId: string): void {
     const dx = e.clientX - last;
     last = e.clientX;
     vx = dx;
-    dragDist += Math.abs(dx);
     x += dx;
     scheduleApply();
   });
-  const endDrag = (e: PointerEvent): void => {
+  const endDrag = (): void => {
     if (!dragging) {
       return;
     }
     dragging = false;
     track.classList.remove("dragging");
-    const slide = (e.target as Element | null)?.closest?.(".slide");
-    if (dragDist < 12 && slide instanceof HTMLElement) {
-      interacting = false;
-      goIndex(Number(slide.dataset.i));
-      return;
-    }
     const coast = (): void => {
-      vx *= 0.94;
-      if (Math.abs(vx) < 0.4) {
+      vx *= 0.92;
+      if (Math.abs(vx) < 0.35) {
         interacting = false;
         hydrate(currentFromX());
         apply();
@@ -629,13 +612,27 @@ function bindDiaryStage(startId: string): void {
     "wheel",
     (e) => {
       e.preventDefault();
-      nudge(-(e.deltaY + e.deltaX));
+      followStart = false;
+      x -= e.deltaY + e.deltaX;
+      scheduleApply();
     },
     {passive: false}
   );
 
-  document.getElementById("cinema-prev")?.addEventListener("click", () => nudge(track.clientWidth * 0.7));
-  document.getElementById("cinema-next")?.addEventListener("click", () => nudge(-track.clientWidth * 0.7));
+  document.getElementById("cinema-prev")?.addEventListener("click", () => {
+    followStart = false;
+    x += track.clientWidth * 0.7;
+    interacting = false;
+    apply();
+    hydrate(currentFromX());
+  });
+  document.getElementById("cinema-next")?.addEventListener("click", () => {
+    followStart = false;
+    x -= track.clientWidth * 0.7;
+    interacting = false;
+    apply();
+    hydrate(currentFromX());
+  });
   document.querySelectorAll<HTMLElement>(".tick").forEach((tick) => {
     tick.addEventListener("click", () => goIndex(Number(tick.dataset.jump)));
   });
@@ -680,12 +677,18 @@ function bindDiaryStage(startId: string): void {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
       followStart = false;
-      nudge(-Math.round(track.clientWidth * 0.55));
+      x -= Math.round(track.clientWidth * 0.55);
+      interacting = false;
+      apply();
+      hydrate(currentFromX());
     }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
       followStart = false;
-      nudge(Math.round(track.clientWidth * 0.55));
+      x += Math.round(track.clientWidth * 0.55);
+      interacting = false;
+      apply();
+      hydrate(currentFromX());
     }
   };
   window.addEventListener("keydown", diaryKeys);

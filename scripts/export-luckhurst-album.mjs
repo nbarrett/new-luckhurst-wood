@@ -2,6 +2,7 @@ import {execFileSync} from "node:child_process";
 import {mkdirSync, readdirSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {skipNames, skipStamps, video} from "./diary-skip.mjs";
 
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const dropDir = join(root, "public/photos");
@@ -51,16 +52,6 @@ end tell`
 );
 
 const known = diaryMinutes();
-const skipStamps = new Set([
-  "2026-04-10-1729",
-  "2026-04-10-1829",
-  "2026-04-10-1736",
-  "2026-04-10-1836",
-  "2026-08-08-1631",
-  "2026-08-08-1731"
-]);
-const skipNames = new Set(["IMG_5353.HEIC", "IMG_5356.HEIC", "IMG_6138.HEIC"]);
-const video = /\.(mov|mp4|m4v)$/i;
 const wanted = [];
 for (const line of listing.trim().split(/\r\n|\n|\r/)) {
   const [stamp, filename] = line.split("\t");
