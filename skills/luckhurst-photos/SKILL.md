@@ -20,7 +20,7 @@ That is `scripts/sync-luckhurst-photos.mjs` then `scripts/ingest-photos.mjs`. Ne
 Union of:
 
 1. Stills in the Apple Photos album **Luckhurst**
-2. Stills in the Photos library whose GPS falls inside the padded woodland box from `src/site-boundary.json` (`scripts/luckhurst-geo.mjs`)
+2. Stills in the Photos library taken after the newest diary day whose GPS falls inside the walking area in `scripts/luckhurst-geo.mjs` (worked out from where the album photos were taken; not the planting boundary in `src/site-boundary.json`). Places listed in `LUCKHURST_GPS_EXCLUDE` in `.env` (home) are left out. Keep coordinates like that out of the repo: it is public.
 
 Skip videos. Skip anything already in `public/assets/diary/` (matched by date-time, including ±1 hour). Skip names and stamps in `scripts/diary-skip.mjs` (close shots of a child, and the 8 August photo that was not on site).
 

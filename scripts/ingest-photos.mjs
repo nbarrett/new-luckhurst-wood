@@ -31,11 +31,12 @@ function sips(args) {
 }
 
 function parseSipsDate(text) {
-  const match = text.match(/creation:\s+(\S+\s+\S+)/);
+  // sips prints EXIF local time as "2026:09:15 18:40:27".
+  const match = text.match(/creation:\s+(\d{4})[:-](\d{2})[:-](\d{2})\s+(\d{2}:\d{2}:\d{2})/);
   if (!match) {
     return null;
   }
-  const value = Date.parse(match[1].replace(" ", "T"));
+  const value = Date.parse(`${match[1]}-${match[2]}-${match[3]}T${match[4]}`);
   return Number.isNaN(value) ? null : new Date(value);
 }
 
@@ -45,11 +46,13 @@ function parseMdlsDate(path) {
     ["-name", "kMDItemContentCreationDate", "-name", "kMDItemFSCreationDate", "-raw", path],
     {encoding: "utf8"}
   );
-  const match = text.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+  // mdls prints UTC with an offset, e.g. "2026-09-15 17:40:27 +0000".
+  const match = text.match(/(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})(?: ([+-])(\d{2})(\d{2}))?/);
   if (!match) {
     return null;
   }
-  const value = Date.parse(match[1].replace(" ", "T"));
+  const offset = match[3] ? `${match[3]}${match[4]}:${match[5]}` : "";
+  const value = Date.parse(`${match[1]}T${match[2]}${offset}`);
   return Number.isNaN(value) ? null : new Date(value);
 }
 

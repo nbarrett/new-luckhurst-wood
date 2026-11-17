@@ -12,7 +12,23 @@ const diaryDir = join(root, "public/assets/diary");
 mkdirSync(dropDir, {recursive: true});
 
 const COCOA_EPOCH = 978307200;
-const SINCE_UNIX = Date.parse("2026-04-01T00:00:00") / 1000;
+// GPS hits only count from the day after the newest diary day. Older walks were
+// already picked through the album, and their left-out shots should stay out.
+function newestDiaryDay() {
+  const days = readdirSync(diaryDir)
+    .map((name) => name.match(/^(\d{4}-\d{2}-\d{2})-\d{4}-[0-9a-f]{8}\.jpg$/i))
+    .filter(Boolean)
+    .map((match) => match[1])
+    .sort();
+  return days.at(-1);
+}
+
+const newestDay = newestDiaryDay();
+const sinceDate = newestDay ? new Date(`${newestDay}T00:00:00`) : new Date("2026-04-01T00:00:00");
+if (newestDay) {
+  sinceDate.setDate(sinceDate.getDate() + 1);
+}
+const SINCE_UNIX = sinceDate.getTime() / 1000;
 
 function diaryMinutes() {
   const set = new Set();
