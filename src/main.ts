@@ -32,7 +32,7 @@ function isNarrow(): boolean {
 }
 
 function applyWidth(route: Route): void {
-  const full = isNarrow() || route.view === "diary";
+  const full = isNarrow() || route.view === "diary" || route.view === "panels";
   document.documentElement.classList.toggle("full-width", full);
   window.dispatchEvent(new Event("luckhurst-width"));
 }
