@@ -27,5 +27,5 @@ export function mountMap(el: HTMLElement): void {
   }).addTo(map);
   poly.bindPopup("New Luckhurst Wood (indicative boundary for this explainer)");
   map.fitBounds(poly.getBounds().pad(0.35));
-  setTimeout(() => map?.invalidateSize(), 80);
+  setTimeout(() => map?.invalidateSize(), 120);
 }

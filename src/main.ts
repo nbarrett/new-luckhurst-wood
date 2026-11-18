@@ -67,6 +67,7 @@ function chrome(route: Route, body: string): string {
 
 function home(): string {
   return `
+    <div class="home-stack">
     <section class="hero" style="background-image:linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.45)), url('${asset("assets/hero-pond.jpg")}')">
       <div class="hero-copy">
         <p class="slab">New Luckhurst Wood</p>
@@ -83,35 +84,42 @@ function home(): string {
         <a class="stat" href="${to("/faq")}"><b>Winter 2026/27</b> target first planting</a>
       </div>
       <p class="disclaimer">This is an unofficial explainer. Wording is condensed from Forestry England’s published PDFs (May 2026). If a detail matters legally, use the original files.</p>
-      <div class="grid">
-        <article class="card">
-          <a class="cover" href="${to("/panels/1")}">
-            <img class="thumb" src="${asset("assets/panel-01.jpg")}" alt="Exhibition board introducing New Luckhurst Wood">
-            <div class="pad">
-              <div class="kicker">The hard PDF</div>
-              <h2>Eight A0 boards</h2>
-              <p>The 23 MB consultation pack is landscape poster-size. Here each board is a page, with a short annotation so you do not have to pinch-zoom a whole hall display.</p>
-            </div>
-          </a>
-        </article>
-        <article class="card">
-          <a class="cover" href="${to("/design")}">
-            <img class="thumb" src="${asset("assets/design-plan.jpg")}" alt="New Luckhurst design plan">
-            <div class="pad">
-              <div class="kicker">May 2026</div>
-              <h2>Final design plan</h2>
-              <p>The A3 ArcGIS plan, zoomable, next to a simple location map of the two parcels either side of Bethersden Road.</p>
-            </div>
-          </a>
-        </article>
+      <div class="home-split">
+        <div class="home-main">
+          <div class="grid">
+            <article class="card">
+              <a class="cover" href="${to("/panels/1")}">
+                <img class="thumb" src="${asset("assets/panel-01.jpg")}" alt="Exhibition board introducing New Luckhurst Wood">
+                <div class="pad">
+                  <div class="kicker">The hard PDF</div>
+                  <h2>Eight A0 boards</h2>
+                  <p>The 23 MB consultation pack is landscape poster-size. Here each board is a page, with a short annotation so you do not have to pinch-zoom a whole hall display.</p>
+                </div>
+              </a>
+            </article>
+            <article class="card">
+              <a class="cover" href="${to("/design")}">
+                <img class="thumb" src="${asset("assets/design-plan.jpg")}" alt="New Luckhurst design plan">
+                <div class="pad">
+                  <div class="kicker">May 2026</div>
+                  <h2>Final design plan</h2>
+                  <p>The A3 ArcGIS plan, zoomable, next to a simple location map of the two parcels either side of Bethersden Road.</p>
+                </div>
+              </a>
+            </article>
+          </div>
+          <h2>Why this format</h2>
+          <p>Attaching a 23 megabyte poster PDF and a 42-page Word export is a poor way to let a parish read a woodland. People need a contents list, short pages, and the official answer sitting next to the question they actually asked.</p>
+          <h2>From across the road</h2>
+          <p>The house opposite the site is keeping a photo diary as the fields become woodland.</p>
+          <p><a class="btn" href="${to("/diary")}">Open the diary</a></p>
+        </div>
+        <aside class="home-map">
+          <div id="map" role="img" aria-label="Indicative map of New Luckhurst Wood near Smarden"></div>
+          <p class="kicker">Indicative outline only · OSM basemap</p>
+        </aside>
       </div>
-      <h2>Why this format</h2>
-      <p>Attaching a 23 megabyte poster PDF and a 42-page Word export is a poor way to let a parish read a woodland. People need a contents list, short pages, and the official answer sitting next to the question they actually asked.</p>
-      <div id="map" role="img" aria-label="Indicative map of New Luckhurst Wood near Smarden"></div>
-      <p class="kicker" style="margin-top:10px">Indicative outline only · OSM basemap</p>
-      <h2>From across the road</h2>
-      <p>The house opposite the site is keeping a photo diary as the fields become woodland. New pictures drop into <code>public/assets/diary/</code> and a short entry in <code>src/content.ts</code>.</p>
-      <p><a class="btn" href="${to("/diary")}">Open the diary</a></p>
+    </div>
     </div>`;
 }
 
@@ -140,8 +148,8 @@ function panelsView(id: number): string {
   const prev = id > 1 ? id - 1 : 8;
   const next = id < 8 ? id + 1 : 1;
   return `
-    <div class="wrap">
-      <div class="layout">
+    <div class="wrap wrap-fit">
+      <div class="layout layout-boards">
         <nav class="side" aria-label="Boards">
           ${panels
             .map(
@@ -150,14 +158,14 @@ function panelsView(id: number): string {
             )
             .join("")}
         </nav>
-        <article>
-          <div class="kicker">${panel.kicker}</div>
-          <h1>${panel.title}</h1>
-          <p>${panel.summary}</p>
+        <article class="board-article">
+          <div class="board-head">
+            <div class="kicker">${panel.kicker}</div>
+            <h1>${panel.title}</h1>
+          </div>
           <div class="viewer">
             <img src="${asset(`assets/panel-${String(id).padStart(2, "0")}.jpg`)}" alt="${panel.title} exhibition board">
           </div>
-          <ul class="notes">${panel.notes.map((n) => `<li>${n}</li>`).join("")}</ul>
           <div class="pager">
             <a class="btn ghost" href="${to(`/panels/${prev}`)}">Previous</a>
             <a class="btn" href="${to(`/panels/${next}`)}">Next board</a>
@@ -169,20 +177,23 @@ function panelsView(id: number): string {
 
 function designView(): string {
   return `
-    <div class="wrap">
-      <div class="kicker">Design plan · May 2026</div>
-      <h1>The planting plan, one page at a time</h1>
-      <p>Official A3 drawing from ArcGIS. The whole plan fits on this screen.</p>
-      <div class="viewer">
-        <img src="${asset("assets/design-plan.jpg")}" alt="New Luckhurst Wood design plan">
-      </div>
-      <ul class="notes">
-        <li>New pedestrian entrance north of Bethersden Road.</li>
-        <li>Wavy 10–20 m river buffer, widened after Natural England’s advice.</li>
-        <li>Elm resistant to Dutch elm disease, for white-letter hairstreak.</li>
-        <li>No public car park; locked gates on forest tracks.</li>
-      </ul>
-      <p><a class="btn ghost" href="${sources.design}">Original 3.6 MB PDF</a></p>
+    <div class="wrap wrap-fit wrap-design">
+      <article class="fit-article">
+        <div class="board-head">
+          <div class="kicker">Design plan · May 2026</div>
+          <h1>The planting plan</h1>
+          <a class="btn ghost" href="${sources.design}">Original PDF</a>
+        </div>
+        <div class="viewer">
+          <img src="${asset("assets/design-plan.jpg")}" alt="New Luckhurst Wood design plan">
+        </div>
+        <ul class="notes notes-inline">
+          <li>New pedestrian entrance north of Bethersden Road.</li>
+          <li>Wavy 10–20 m river buffer, after Natural England’s advice.</li>
+          <li>Dutch-elm-resistant elm, for white-letter hairstreak.</li>
+          <li>No public car park; locked gates on forest tracks.</li>
+        </ul>
+      </article>
     </div>`;
 }
 
@@ -209,12 +220,12 @@ function reportView(id: string): string {
 function issuesView(id: number): string {
   const current = issues.find((i) => i.id === id) ?? issues[0];
   return `
-    <div class="wrap">
-      <div class="layout">
+    <div class="wrap wrap-fit">
+      <div class="layout layout-issues">
         <nav class="side" aria-label="Issues">
           ${issuesNav(id)}
         </nav>
-        <article>
+        <article class="issue-article">
           <div class="kicker">Issue ${current.id} of 21 · ${current.theme}</div>
           <div class="issue">
             <h1>${current.question}</h1>
