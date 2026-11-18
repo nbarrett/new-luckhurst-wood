@@ -10,7 +10,7 @@
   --radius: 0;
   --shadow: none;
   --page-pad: 24px;
-  --page-max: 1180px;
+  --page-max: 100%;
 }
 
 * {

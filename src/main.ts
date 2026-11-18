@@ -27,13 +27,8 @@ function asset(file: string): string {
 
 const NARROW = "(max-width: 860px)";
 
-function isNarrow(): boolean {
-  return window.matchMedia(NARROW).matches;
-}
-
-function applyWidth(route: Route): void {
-  const full = isNarrow() || route.view === "diary" || route.view === "panels";
-  document.documentElement.classList.toggle("full-width", full);
+function applyWidth(_route: Route): void {
+  document.documentElement.classList.add("full-width");
   window.dispatchEvent(new Event("luckhurst-width"));
 }
 
