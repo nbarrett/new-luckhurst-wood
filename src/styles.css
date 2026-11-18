@@ -168,7 +168,7 @@ h3 {
 
 h1 {
   font-size: clamp(1.75rem, 3vw, 2.4rem);
-  max-width: 28ch;
+  max-width: 36rem;
 }
 
 .hero h1 {
@@ -177,8 +177,8 @@ h1 {
 }
 
 .issue h1 {
-  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
-  max-width: 40ch;
+  font-size: clamp(1.5rem, 2.4vw, 2.15rem);
+  max-width: none;
 }
 
 .lede {
@@ -329,8 +329,8 @@ html.full-width .hero {
 }
 
 html.full-width .layout {
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(260px, 24vw) minmax(0, 1fr);
+  gap: 28px;
 }
 
 .notes {
@@ -386,8 +386,9 @@ html.full-width .layout {
 }
 
 .issue p {
-  font-size: 1.05rem;
-  max-width: 68ch;
+  font-size: 1.08rem;
+  max-width: 72rem;
+  line-height: 1.5;
 }
 
 .photos {
