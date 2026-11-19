@@ -1,9 +1,10 @@
 import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
-import {copyFileSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync} from "node:fs";
+import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {video} from "./diary-skip.mjs";
 import {PREFIX, siteAwsEnv} from "./s3-env.mjs";
 
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
@@ -14,6 +15,12 @@ const maxEdge = 2560;
 const fitEdge = 1600;
 const jpegQuality = "88";
 const fitQuality = "78";
+const stillPattern = /\.(jpe?g|heic|png|webp|tif|tiff)$/i;
+// avconvert ships with macOS. Its H.264 presets turn iPhone HDR into SDR, and
+// its metadata filter strips GPS from the output, which matters on a public bucket.
+const videoPreset = "Preset1280x720";
+const posterEdge = 1600;
+const videoStampsPath = join(dropDir, ".video-stamps.json");
 
 mkdirSync(dropDir, {recursive: true});
 mkdirSync(diaryDir, {recursive: true});
@@ -66,13 +73,13 @@ function creationDate(path) {
   return parseMdlsDate(path) || new Date(statSync(path).mtimeMs);
 }
 
-function stamp(date, id) {
+function stamp(date, id, extension = "jpg") {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   const hh = String(date.getHours()).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${d}-${hh}${mm}-${id}.jpg`;
+  return `${y}-${m}-${d}-${hh}${mm}-${id}.${extension}`;
 }
 
 function convertToJpeg(src, dest, edge = maxEdge, quality = jpegQuality) {
@@ -88,7 +95,7 @@ function makeFit(fullPath, dest) {
 function diaryIds() {
   const ids = new Map();
   for (const name of readdirSync(diaryDir)) {
-    const match = name.match(/-([0-9a-f]{8})\.jpg$/i);
+    const match = name.match(/-([0-9a-f]{8})\.(?:jpg|mp4)$/i);
     if (match) {
       ids.set(match[1].toLowerCase(), name);
     }
@@ -96,21 +103,92 @@ function diaryIds() {
   return ids;
 }
 
+function baseName(name) {
+  return name.replace(/\.[^.]+$/, "").toLowerCase();
+}
+
 function dropFiles() {
-  return readdirSync(dropDir)
-    .filter((name) => name !== ".gitkeep" && name !== ".DS_Store" && !name.startsWith("."))
-    .filter((name) => /\.(jpe?g|heic|png|webp|tif|tiff)$/i.test(name))
-    .map((name) => join(dropDir, name))
-    .filter((path) => statSync(path).isFile());
+  const names = readdirSync(dropDir)
+    .filter((name) => !name.startsWith("."))
+    .filter((name) => statSync(join(dropDir, name)).isFile());
+  const stills = names.filter((name) => stillPattern.test(name));
+  const stillBases = new Set(stills.map(baseName));
+  const videos = [];
+  for (const name of names.filter((name) => video.test(name))) {
+    // A clip sharing a still's name is the motion half of a Live Photo.
+    if (stillBases.has(baseName(name))) {
+      unlinkSync(join(dropDir, name));
+      console.log(`dropped Live Photo clip ${name}`);
+      continue;
+    }
+    videos.push(name);
+  }
+  return [...stills, ...videos].map((name) => join(dropDir, name));
+}
+
+function videoStamps() {
+  if (!existsSync(videoStampsPath)) {
+    return {};
+  }
+  return JSON.parse(readFileSync(videoStampsPath, "utf8"));
+}
+
+function dateFromStamp(value) {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]));
+}
+
+function videoDate(path, stamps) {
+  // An edited export can come back as .mov or .mp4 rather than .MOV, so match on the base name.
+  const wanted = baseName(path.split("/").pop());
+  const key = Object.keys(stamps).find((name) => baseName(name) === wanted);
+  const fromPhotos = dateFromStamp(key ? stamps[key] : undefined);
+  if (fromPhotos) {
+    return fromPhotos;
+  }
+  try {
+    const fromSpotlight = parseMdlsDate(path);
+    if (fromSpotlight) {
+      return fromSpotlight;
+    }
+  } catch {}
+  return new Date(statSync(path).mtimeMs);
+}
+
+function convertVideo(src, dest) {
+  const tmp = join(tmpdir(), `luckhurst-${Math.random().toString(16).slice(2)}.mp4`);
+  execFileSync("avconvert", ["--source", src, "--preset", videoPreset, "--output", tmp, "--replace"], {
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 1800000
+  });
+  copyFileSync(tmp, dest);
+  unlinkSync(tmp);
+}
+
+function makePoster(videoPath, dest) {
+  const dir = join(tmpdir(), `luckhurst-poster-${Math.random().toString(16).slice(2)}`);
+  mkdirSync(dir, {recursive: true});
+  execFileSync("qlmanage", ["-t", "-s", String(posterEdge), "-o", dir, videoPath], {stdio: ["ignore", "pipe", "pipe"]});
+  const png = join(dir, `${videoPath.split("/").pop()}.png`);
+  if (!existsSync(png)) {
+    throw new Error(`Quick Look made no poster for ${videoPath}`);
+  }
+  convertToJpeg(png, dest, posterEdge, jpegQuality);
+  unlinkSync(png);
 }
 
 function ingestDrop() {
   const ids = diaryIds();
+  const stamps = videoStamps();
   const added = [];
   const replaced = [];
   for (const src of dropFiles()) {
+    const isVideo = video.test(src);
     const id = uuid8(src.split("/").pop());
-    const destName = stamp(creationDate(src), id);
+    const destName = isVideo ? stamp(videoDate(src, stamps), id, "mp4") : stamp(creationDate(src), id);
     const dest = join(diaryDir, destName);
     const previous = ids.get(id);
     if (previous && previous !== destName) {
@@ -121,10 +199,18 @@ function ingestDrop() {
         /* old name already gone */
       }
     }
-    convertToJpeg(src, dest);
+    if (isVideo) {
+      convertVideo(src, dest);
+    } else {
+      convertToJpeg(src, dest);
+    }
     ids.set(id, destName);
     unlinkSync(src);
-    uploadDiaryFile(dest);
+    if (isVideo) {
+      uploadDiaryVideo(dest);
+    } else {
+      uploadDiaryFile(dest);
+    }
     if (previous) {
       replaced.push(destName);
       console.log(`replaced ${destName}`);
@@ -133,10 +219,13 @@ function ingestDrop() {
       console.log(`added ${destName}`);
     }
   }
+  if (existsSync(videoStampsPath)) {
+    unlinkSync(videoStampsPath);
+  }
   return {added, replaced};
 }
 
-function putS3(localPath, key) {
+function putS3(localPath, key, contentType = "image/jpeg") {
   const aws = siteAwsEnv();
   if (!aws.AWS_ACCESS_KEY_ID || !aws.AWS_SECRET_ACCESS_KEY) {
     throw new Error("Missing site AWS credentials in .env — run npm run photos:setup-s3");
@@ -149,7 +238,7 @@ function putS3(localPath, key) {
       localPath,
       `s3://${aws.AWS_BUCKET}/${key}`,
       "--content-type",
-      "image/jpeg",
+      contentType,
       "--cache-control",
       "public, max-age=31536000, immutable"
     ],
@@ -164,6 +253,17 @@ function uploadDiaryFile(path) {
   makeFit(path, fit);
   putS3(fit, `${PREFIX}/fit/${name}`);
   unlinkSync(fit);
+}
+
+// Videos live at diary/video/<stamp>.mp4 with a still frame at
+// diary/poster/<stamp>.jpg, which the diary shows until someone presses play.
+function uploadDiaryVideo(path) {
+  const name = path.split("/").pop();
+  putS3(path, `${PREFIX}/video/${name}`, "video/mp4");
+  const poster = join(tmpdir(), `luckhurst-poster-${name.replace(/\.mp4$/, ".jpg")}`);
+  makePoster(path, poster);
+  putS3(poster, `${PREFIX}/poster/${name.replace(/\.mp4$/, ".jpg")}`);
+  unlinkSync(poster);
 }
 
 function shrinkDiary() {
@@ -220,7 +320,7 @@ function rewriteContent() {
   }
   const byDate = new Map();
   for (const name of readdirSync(diaryDir).sort()) {
-    const match = name.match(/^(\d{4}-\d{2}-\d{2})-\d{4}-[0-9a-f]{8}\.jpg$/i);
+    const match = name.match(/^(\d{4}-\d{2}-\d{2})-\d{4}-[0-9a-f]{8}\.(?:jpg|mp4)$/i);
     if (!match) {
       continue;
     }

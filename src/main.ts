@@ -369,8 +369,9 @@ function diaryView(id: string): string {
   const slides = film
     .map(
       (p, idx) => `
-      <figure class="slide" data-i="${idx}" data-date="${p.date}" data-slug="${p.slug}">
-        <img data-src="${p.src}" alt="${p.alt}" draggable="false" decoding="async">
+      <figure class="slide${p.video ? " has-video" : ""}" data-i="${idx}" data-date="${p.date}" data-slug="${p.slug}"${p.video ? ` data-video="${p.video}"` : ""}>
+        <img data-src="${p.src}" alt="${p.alt}" draggable="false" decoding="async">${p.video ? `
+        <span class="play" aria-hidden="true"></span>` : ""}
       </figure>`
     )
     .join("");
@@ -467,6 +468,8 @@ function bindDiaryStage(startId: string): void {
   let interacting = false;
   let applyRaf = 0;
   let lastUrl = "";
+  let downX = 0;
+  let travelled = 0;
 
   const nearbyCount = (): number => (window.matchMedia("(max-width: 860px)").matches ? 2 : 3);
 
@@ -491,9 +494,56 @@ function bindDiaryStage(startId: string): void {
     img.style.height = "100%";
   };
 
+  const stopVideo = (slide: HTMLElement): void => {
+    slide.querySelector("video")?.remove();
+    slide.classList.remove("playing");
+  };
+
+  // Tap (or Enter / Space) toggles a video slide. The clip only loads once
+  // someone asks for it, and only one plays at a time.
+  const toggleVideo = (slide: HTMLElement): void => {
+    const url = slide.dataset.video;
+    if (!url) {
+      return;
+    }
+    let clip = slide.querySelector<HTMLVideoElement>("video");
+    if (clip && !clip.paused) {
+      clip.pause();
+      slide.classList.remove("playing");
+      return;
+    }
+    slides.forEach((other) => {
+      if (other !== slide) {
+        stopVideo(other);
+      }
+    });
+    if (!clip) {
+      clip = document.createElement("video");
+      clip.src = url;
+      clip.playsInline = true;
+      clip.preload = "auto";
+      const poster = slide.querySelector("img")?.getAttribute("src");
+      if (poster) {
+        clip.poster = poster;
+      }
+      clip.addEventListener("ended", () => stopVideo(slide));
+      slide.appendChild(clip);
+    }
+    slide.classList.add("playing");
+    clip.play().catch(() => slide.classList.remove("playing"));
+  };
+
+  const slideAt = (clientX: number, clientY: number): HTMLElement | undefined =>
+    document
+      .elementsFromPoint(clientX, clientY)
+      .find((el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("slide"));
+
   const hydrate = (center: number): void => {
     const span = nearbyCount();
     slides.forEach((slide, i) => {
+      if (Math.abs(i - center) > span) {
+        stopVideo(slide);
+      }
       const img = slide.querySelector<HTMLImageElement>("img");
       const url = img?.dataset.src;
       if (!img || !url) {
@@ -505,6 +555,14 @@ function bindDiaryStage(startId: string): void {
           img.addEventListener(
             "load",
             () => {
+              // Until someone moves the strip, keep the linked slide centred.
+              // Holding a neighbour's left edge drifts once wide panoramas or the
+              // linked slide itself load at their real width.
+              if (followStart) {
+                sizeSlide(img);
+                goIndex(filmIndexFor(startId), true);
+                return;
+              }
               const anchor = slides[current] ?? slide;
               const before = anchor.offsetLeft;
               sizeSlide(img);
@@ -613,6 +671,8 @@ function bindDiaryStage(startId: string): void {
     dragging = true;
     interacting = true;
     last = e.clientX;
+    downX = e.clientX;
+    travelled = 0;
     vx = 0;
     track.setPointerCapture(e.pointerId);
     track.classList.add("dragging");
@@ -626,14 +686,22 @@ function bindDiaryStage(startId: string): void {
     last = e.clientX;
     vx = dx;
     x += dx;
+    travelled = Math.max(travelled, Math.abs(e.clientX - downX));
     scheduleApply();
   });
-  const endDrag = (): void => {
+  const endDrag = (e: PointerEvent): void => {
     if (!dragging) {
       return;
     }
     dragging = false;
     track.classList.remove("dragging");
+    if (e.type === "pointerup" && travelled < 6) {
+      const tapped = slideAt(e.clientX, e.clientY);
+      if (tapped?.dataset.video) {
+        vx = 0;
+        toggleVideo(tapped);
+      }
+    }
     const coast = (): void => {
       vx *= 0.92;
       if (Math.abs(vx) < 0.35) {
@@ -724,6 +792,10 @@ function bindDiaryStage(startId: string): void {
       interacting = false;
       apply();
       hydrate(currentFromX());
+    }
+    if ((e.key === "Enter" || e.key === " ") && slides[current]?.dataset.video) {
+      e.preventDefault();
+      toggleVideo(slides[current]);
     }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
