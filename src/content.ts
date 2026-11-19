@@ -32,6 +32,7 @@ function shots(date: string, files: string[]): DiaryPhoto[] {
 
 /** Newest first. Every file dropped in public/photos. */
 export const diary: DiaryEntry[] = [
+  {id: "2026-11-18", date: "2026-11-18", title: "18 November", body: "", photos: shots("18 November 2026", ["2026-11-18-1528-732609d7.jpg","2026-11-18-1528-96437d0e.jpg","2026-11-18-1534-b935da18.jpg"])},
   {id: "2026-11-16", date: "2026-11-16", title: "16 November", body: "", photos: shots("16 November 2026", ["2026-11-16-1439-65ad5bcc.jpg","2026-11-16-1439-977d7ae3.jpg","2026-11-16-1440-04e28c35.jpg","2026-11-16-1440-1136e608.jpg","2026-11-16-1441-2c6639a1.jpg","2026-11-16-1441-593e78f2.jpg","2026-11-16-1442-ef4bbe25.jpg","2026-11-16-1446-b2434451.jpg","2026-11-16-1447-0cc774bb.jpg","2026-11-16-1447-b33035cd.jpg","2026-11-16-1511-593ece0b.jpg"])},
   {id: "2026-11-14", date: "2026-11-14", title: "14 November", body: "", photos: shots("14 November 2026", ["2026-11-14-0948-cddbde0d.jpg","2026-11-14-0951-72f1a68d.jpg","2026-11-14-0955-582f35f7.jpg"])},
   {id: "2026-11-11", date: "2026-11-11", title: "11 November", body: "", photos: shots("11 November 2026", ["2026-11-11-1519-9e13d3fc.jpg"])},
