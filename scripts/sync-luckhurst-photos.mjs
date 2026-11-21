@@ -172,8 +172,12 @@ tell application "Photos"
   repeat with i from 1 to count of allDates
     set d to item i of allDates
     if d ≥ fromDay then
+      try
       set m to media item id (item i of allIds)
       set loc to location of m
+      on error
+      set loc to {missing value, missing value}
+      end try
       if (item 1 of loc) is not missing value then
         set y to year of d as string
         set mo to text -2 thru -1 of ("0" & ((month of d) as integer))
