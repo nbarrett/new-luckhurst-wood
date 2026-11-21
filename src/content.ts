@@ -41,8 +41,8 @@ function shots(date: string, files: string[]): DiaryPhoto[] {
   });
 }
 
-/** One day in the diary list the photo sync uploads to S3 (diary/index.json). */
-export type DiaryDay = {date: string; title: string; body: string; files: string[]};
+/** One day in the diary list on S3 (diary/index.json). hidden lists files left out of the diary. */
+export type DiaryDay = {date: string; title: string; body: string; files: string[]; hidden?: string[]};
 
 export const diaryListUrl = `${diaryPhotoBase}/index.json`;
 
@@ -56,21 +56,24 @@ function longDiaryDate(iso: string): string {
   });
 }
 
-/** Builds diary entries from the uploaded list. Text written here in content.ts wins over the list's. */
+/** Builds diary entries from the S3 list, which holds the latest titles, notes and hidden photos. */
 export function diaryFromDays(days: DiaryDay[]): DiaryEntry[] {
   const written = new Map(diary.map((d) => [d.date, d]));
   return days
     .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && Array.isArray(d.files))
     .map((d) => {
       const here = written.get(d.date);
+      const hidden = new Set(Array.isArray(d.hidden) ? d.hidden : []);
+      const files = d.files.filter((f) => /^[\w-]+\.(?:jpg|mp4)$/.test(f) && !hidden.has(f));
       return {
         id: d.date,
         date: d.date,
-        title: here?.title || d.title,
-        body: here?.body || d.body,
-        photos: shots(longDiaryDate(d.date), d.files.filter((f) => /^[\w-]+\.(?:jpg|mp4)$/.test(f)))
+        title: d.title || here?.title || d.date,
+        body: typeof d.body === "string" ? d.body : (here?.body ?? ""),
+        photos: shots(longDiaryDate(d.date), files)
       };
-    });
+    })
+    .filter((d) => d.photos.length > 0);
 }
 
 /** Newest first. Every file dropped in public/photos. */

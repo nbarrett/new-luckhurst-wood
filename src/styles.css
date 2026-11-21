@@ -735,6 +735,17 @@ html.full-width .cinema {
   font-weight: 700;
 }
 
+.cinema-note {
+  margin: 6px 0 0;
+  max-width: min(36rem, 70vw);
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.cinema-note[hidden] {
+  display: none;
+}
+
 .cinema-count {
   margin: 4px 0 0;
   opacity: 0.85;

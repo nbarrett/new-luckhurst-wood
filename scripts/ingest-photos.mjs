@@ -5,6 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
 import {video} from "./diary-skip.mjs";
+import {fetchDiaryList, putDiaryList} from "./diary-list.mjs";
 import {PREFIX, siteAwsEnv} from "./s3-env.mjs";
 
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
@@ -266,15 +267,6 @@ function uploadDiaryVideo(path) {
   unlinkSync(poster);
 }
 
-// The site reads diary/index.json at load, so new photos show without a deploy.
-function uploadDiaryList(days) {
-  const path = join(tmpdir(), "luckhurst-diary-index.json");
-  writeFileSync(path, JSON.stringify(days));
-  putS3(path, `${PREFIX}/index.json`, "application/json", "no-cache");
-  unlinkSync(path);
-  console.log(`uploaded diary list: ${days.length} days`);
-}
-
 function shrinkDiary() {
   let shrunk = 0;
   for (const name of readdirSync(diaryDir)) {
@@ -321,12 +313,16 @@ function altFor(iso) {
   });
 }
 
-function rewriteContent() {
+// Day titles, notes and hidden photos are edited on the S3 list (the edit
+// page at /__diary/ under npm run dev), so they are read back from it here.
+// src/content.ts is the fallback the site uses if the list cannot be fetched.
+function rewriteContent(listed) {
   const text = readFileSync(contentPath, "utf8");
   const captions = new Map();
-  for (const match of text.matchAll(/\{id: "([^"]+)", date: "([^"]+)", title: "([^"]*)", body: "([^"]*)"/g)) {
-    captions.set(match[2], {title: match[3], body: match[4]});
+  for (const match of text.matchAll(/\{id: "([^"]+)", date: "([^"]+)", title: ("(?:[^"\\]|\\.)*"), body: ("(?:[^"\\]|\\.)*")/g)) {
+    captions.set(match[2], {title: JSON.parse(match[3]), body: JSON.parse(match[4])});
   }
+  const remote = new Map(listed.map((day) => [day.date, day]));
   const byDate = new Map();
   for (const name of readdirSync(diaryDir).sort()) {
     const match = name.match(/^(\d{4}-\d{2}-\d{2})-\d{4}-[0-9a-f]{8}\.(?:jpg|mp4)$/i);
@@ -342,26 +338,38 @@ function rewriteContent() {
     console.log("no local diary files — left src/content.ts unchanged");
     return {days: 0, photos: 0};
   }
-  const entries = dates.map((iso) => {
-    const cap = captions.get(iso) || {title: titleFor(iso), body: ""};
-    const files = byDate.get(iso).map((file) => `"${file}"`).join(",");
-    return `  {id: "${iso}", date: "${iso}", title: "${cap.title}", body: "${cap.body}", photos: shots("${altFor(iso)}", [${files}])}`;
+  const days = dates.map((iso) => {
+    const here = captions.get(iso) || {title: titleFor(iso), body: ""};
+    const there = remote.get(iso);
+    const files = byDate.get(iso);
+    return {
+      date: iso,
+      title: there?.title || here.title,
+      body: there ? there.body : here.body,
+      files,
+      hidden: (there?.hidden || []).filter((file) => files.includes(file))
+    };
   });
-  uploadDiaryList(
-    dates.map((iso) => {
-      const cap = captions.get(iso) || {title: titleFor(iso), body: ""};
-      return {date: iso, title: cap.title, body: cap.body, files: byDate.get(iso)};
-    })
-  );
+  putDiaryList(days);
+  console.log(`uploaded diary list: ${days.length} days`);
+  const entries = days
+    .map((day) => ({...day, shown: day.files.filter((file) => !day.hidden.includes(file))}))
+    .filter((day) => day.shown.length > 0)
+    .map((day) => {
+      const files = day.shown.map((file) => `"${file}"`).join(",");
+      return `  {id: "${day.date}", date: "${day.date}", title: ${JSON.stringify(day.title)}, body: ${JSON.stringify(day.body)}, photos: shots("${altFor(day.date)}", [${files}])}`;
+    });
   const next = `export const diary: DiaryEntry[] = [\n${entries.join(",\n")}\n];`;
   const updated = text.replace(/export const diary: DiaryEntry\[] = \[[\s\S]*?\];/, next);
   writeFileSync(contentPath, updated);
-  return {days: dates.length, photos: [...byDate.values()].reduce((n, list) => n + list.length, 0)};
+  const hidden = days.reduce((n, day) => n + day.hidden.length, 0);
+  return {days: entries.length, photos: days.reduce((n, day) => n + day.files.length, 0) - hidden};
 }
 
+const listed = await fetchDiaryList();
 const drop = ingestDrop();
 const shrunk = shrinkDiary();
-const written = rewriteContent();
+const written = rewriteContent(listed);
 console.log(
   `done added=${drop.added.length} replaced=${drop.replaced.length} shrunk=${shrunk} days=${written.days} photos=${written.photos}`
 );

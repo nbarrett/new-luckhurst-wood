@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diary editor</title>
+<style>
+  :root {
+    --green: #2d6a3e;
+    --green-dark: #1f4d2c;
+    --ink: #1b1f1b;
+    --muted: #5d665e;
+    --line: #dfe5df;
+    --bg: #f5f7f4;
+    --card: #fff;
+    --warn: #a3361f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.45 system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+  header {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 14px 24px; background: var(--green-dark); color: #fff;
+  }
+  header h1 { margin: 0; font-size: 1.15rem; }
+  header .counts { opacity: 0.85; font-size: 0.92rem; }
+  header .spacer { flex: 1; }
+  header a { color: #cfe9d6; }
+  #status { font-size: 0.92rem; min-width: 10ch; }
+  #status.dirty { color: #ffd58a; font-weight: 600; }
+  #status.error { color: #ffb3a3; font-weight: 600; }
+  button.save {
+    font: inherit; font-weight: 600; padding: 8px 18px; border: 0; border-radius: 6px;
+    background: #fff; color: var(--green-dark); cursor: pointer;
+  }
+  button.save:disabled { opacity: 0.5; cursor: default; }
+  label.filter { font-size: 0.92rem; display: flex; gap: 6px; align-items: center; }
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 80px; }
+  .intro { color: var(--muted); margin: 0 0 20px; }
+  section.day { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 18px; margin-bottom: 18px; }
+  .day-head { display: grid; grid-template-columns: 11rem 1fr; gap: 8px 16px; align-items: start; margin-bottom: 12px; }
+  .day-head h2 { margin: 4px 0 0; font-size: 1.05rem; }
+  .day-head .sub { color: var(--muted); font-size: 0.85rem; }
+  .fields { display: grid; gap: 8px; }
+  .fields label { display: grid; gap: 2px; font-size: 0.8rem; color: var(--muted); }
+  .fields input, .fields textarea {
+    font: inherit; color: var(--ink); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; width: 100%;
+  }
+  .fields textarea { min-height: 2.6em; resize: vertical; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .shot {
+    position: relative; padding: 0; border: 3px solid transparent; border-radius: 8px; overflow: hidden;
+    background: #e8ece8; cursor: pointer; aspect-ratio: 4 / 3;
+  }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shot .time, .shot .badge {
+    position: absolute; font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+    background: rgba(0, 0, 0, 0.6); color: #fff;
+  }
+  .shot .time { left: 6px; bottom: 6px; }
+  .shot .badge { right: 6px; top: 6px; }
+  .shot.hidden img { opacity: 0.25; filter: grayscale(1); }
+  .shot.hidden { border-color: var(--warn); }
+  .shot.hidden::after {
+    content: "Hidden"; position: absolute; inset: 0; display: grid; place-items: center;
+    font-weight: 700; color: var(--warn); letter-spacing: 0.04em;
+  }
+  .shot:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+  .open { position: absolute; left: 6px; top: 6px; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.85); color: var(--ink); text-decoration: none; }
+  @media (max-width: 640px) {
+    .day-head { grid-template-columns: 1fr; }
+    header, main { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Diary editor</h1>
+  <span class="counts" id="counts"></span>
+  <label class="filter"><input type="checkbox" id="only-hidden"> Only days with hidden photos</label>
+  <span class="spacer"></span>
+  <a href="/new-luckhurst-wood/diary" target="_blank">Open the diary</a>
+  <span id="status">Loading…</span>
+  <button type="button" class="save" id="save" disabled>Save</button>
+</header>
+<main>
+  <p class="intro">Click a photo to hide it from the diary, and click again to bring it back. Hidden photos stay in storage. Saving updates the live site straight away; nothing needs deploying.</p>
+  <div id="days"></div>
+</main>
+<script>
+  const base = "https://nbarrett-luckhurst-wood.s3.eu-west-1.amazonaws.com/diary";
+  let days = [];
+  let saved = "";
+  const daysEl = document.getElementById("days");
+  const statusEl = document.getElementById("status");
+  const saveEl = document.getElementById("save");
+  const countsEl = document.getElementById("counts");
+  const onlyHidden = document.getElementById("only-hidden");
+
+  const longDate = (iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "long", year: "numeric", timeZone: "UTC"});
+  };
+  const thumb = (file) => file.endsWith(".mp4") ? `${base}/poster/${file.replace(/\.mp4$/, ".jpg")}` : `${base}/fit/${file}`;
+  const full = (file) => file.endsWith(".mp4") ? `${base}/video/${file}` : `${base}/fit/${file}`;
+  const time = (file) => file.slice(11, 13) + ":" + file.slice(13, 15);
+
+  function setStatus(text, kind = "") {
+    statusEl.textContent = text;
+    statusEl.className = kind;
+  }
+
+  function refresh() {
+    const dirty = JSON.stringify(days) !== saved;
+    saveEl.disabled = !dirty;
+    if (dirty) setStatus("Unsaved changes", "dirty");
+    const total = days.reduce((n, d) => n + d.files.length, 0);
+    const hidden = days.reduce((n, d) => n + d.hidden.length, 0);
+    countsEl.textContent = `${days.length} days · ${total - hidden} shown · ${hidden} hidden`;
+  }
+
+  function render() {
+    daysEl.textContent = "";
+    for (const day of days) {
+      if (onlyHidden.checked && day.hidden.length === 0) continue;
+      const section = document.createElement("section");
+      section.className = "day";
+      section.innerHTML = `
+        <div class="day-head">
+          <div><h2></h2><div class="sub"></div></div>
+          <div class="fields">
+            <label>Title<input type="text" class="title"></label>
+            <label>Note shown under the date<textarea class="body" rows="2" placeholder="Optional"></textarea></label>
+          </div>
+        </div>
+        <div class="grid"></div>`;
+      section.querySelector("h2").textContent = longDate(day.date);
+      const sub = section.querySelector(".sub");
+      const counts = () => {
+        sub.textContent = `${day.files.length - day.hidden.length} of ${day.files.length} shown`;
+      };
+      counts();
+      const title = section.querySelector(".title");
+      title.value = day.title;
+      title.addEventListener("input", () => { day.title = title.value; refresh(); });
+      const body = section.querySelector(".body");
+      body.value = day.body;
+      body.addEventListener("input", () => { day.body = body.value; refresh(); });
+      const grid = section.querySelector(".grid");
+      for (const file of day.files) {
+        const shot = document.createElement("button");
+        shot.type = "button";
+        shot.className = "shot" + (day.hidden.includes(file) ? " hidden" : "");
+        shot.title = file;
+        shot.innerHTML = `<img loading="lazy" alt=""><span class="time"></span>${file.endsWith(".mp4") ? '<span class="badge">Video</span>' : ""}<a class="open" target="_blank" title="Open full size">↗</a>`;
+        shot.querySelector("img").src = thumb(file);
+        shot.querySelector(".time").textContent = time(file);
+        const open = shot.querySelector(".open");
+        open.href = full(file);
+        open.addEventListener("click", (e) => e.stopPropagation());
+        shot.addEventListener("click", () => {
+          const i = day.hidden.indexOf(file);
+          if (i >= 0) day.hidden.splice(i, 1); else day.hidden.push(file);
+          shot.classList.toggle("hidden", i < 0);
+          shot.setAttribute("aria-pressed", String(i < 0));
+          counts();
+          refresh();
+        });
+        shot.setAttribute("aria-pressed", String(day.hidden.includes(file)));
+        grid.append(shot);
+      }
+      daysEl.append(section);
+    }
+  }
+
+  async function load() {
+    const response = await fetch("/__diary/list", {cache: "no-store"});
+    if (!response.ok) throw new Error(await response.text());
+    days = await response.json();
+    saved = JSON.stringify(days);
+    render();
+    refresh();
+    setStatus("Up to date");
+  }
+
+  saveEl.addEventListener("click", async () => {
+    saveEl.disabled = true;
+    setStatus("Saving…");
+    try {
+      const snapshot = JSON.stringify(days);
+      const response = await fetch("/__diary/list", {method: "PUT", headers: {"Content-Type": "application/json"}, body: snapshot});
+      if (!response.ok) throw new Error(await response.text());
+      saved = snapshot;
+      refresh();
+      setStatus(`Saved ${new Date().toLocaleTimeString("en-GB", {hour: "2-digit", minute: "2-digit"})}. Live now.`);
+    } catch (error) {
+      setStatus(`Not saved: ${error.message}`, "error");
+      saveEl.disabled = false;
+    }
+  });
+
+  onlyHidden.addEventListener("change", render);
+  window.addEventListener("beforeunload", (e) => {
+    if (JSON.stringify(days) !== saved) e.preventDefault();
+  });
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      e.preventDefault();
+      if (!saveEl.disabled) saveEl.click();
+    }
+  });
+  load().catch((error) => setStatus(`Could not load: ${error.message}`, "error"));
+</script>
+</body>
+</html>

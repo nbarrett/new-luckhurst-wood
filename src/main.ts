@@ -272,14 +272,14 @@ function normaliseDiaryId(id: string): string {
   return id;
 }
 
-type Shot = DiaryPhoto & {date: string; day: string; slug: string};
+type Shot = DiaryPhoto & {date: string; day: string; note: string; slug: string};
 
 function buildFilm(entries: DiaryEntry[]): Shot[] {
   const taken = new Set<string>();
   const shots = entries
     .slice()
     .reverse()
-    .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})));
+    .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title, note: d.body})));
   return shots.map((shot) => {
     const base = timeSlug(fileStem(shot.src));
     let slug = base;
@@ -373,6 +373,10 @@ function fillScrubLabels(goIndex: (i: number) => void): void {
   });
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 function diaryView(id: string): string {
   const start = film[filmIndexFor(id)] ?? film[0];
   const slides = film
@@ -397,6 +401,7 @@ function diaryView(id: string): string {
       <div class="cinema-meta">
         <p class="cinema-kicker">Neighbour diary · Smarden</p>
         <p class="cinema-date" id="cinema-date">${formatDiaryDate(start.date)}</p>
+        <p class="cinema-note" id="cinema-note"${start.note ? "" : " hidden"}>${escapeHtml(start.note)}</p>
         <p class="cinema-count" id="cinema-count">${filmIndexFor(id) + 1} / ${film.length}</p>
       </div>
       <button type="button" class="cinema-arrow left" id="cinema-prev" aria-label="Earlier">‹</button>
@@ -612,6 +617,11 @@ function bindDiaryStage(startId: string): void {
       return;
     }
     dateEl.textContent = formatDiaryDate(shot.date);
+    const noteEl = document.querySelector<HTMLElement>("#cinema-note");
+    if (noteEl) {
+      noteEl.textContent = shot.note;
+      noteEl.hidden = !shot.note;
+    }
     countEl.textContent = `${best + 1} / ${film.length}`;
     document.querySelectorAll(".tick").forEach((t) => {
       const j = Number((t as HTMLElement).dataset.jump);

@@ -40,7 +40,13 @@ Many walks have no GPS. The album is still required.
 
 ## Publishing without a deploy
 
-Ingest uploads the full diary list to `diary/index.json` on S3 (no-cache). The site reads it when it loads, so new photos and removals show on the live site straight away, with no commit or Pages deploy. `src/content.ts` is still rewritten and is the fallback if the list cannot be fetched; day titles and notes written there win over the list's once deployed.
+Ingest uploads the full diary list to `diary/index.json` on S3 (no-cache). The site reads it when it loads, so new photos show on the live site straight away, with no commit or Pages deploy. `src/content.ts` is still rewritten and is only the fallback if the list cannot be fetched.
+
+Each day in the list has `title`, `body` (the note shown under the date), `files` and `hidden`. Ingest reads the current list first and keeps its titles, notes and hidden photos; if S3 cannot be reached it stops rather than overwrite them.
+
+## Edit page
+
+`npm run dev`, then open `http://localhost:5173/__diary/`. Click a photo to hide or restore it, write day titles and notes, then Save (or Cmd-S); the live site changes at once. Hidden photos stay in S3. The page only exists under the dev server, is never built, and refuses requests from other machines.
 
 ## After ingest
 
@@ -51,4 +57,6 @@ Ingest uploads the full diary list to `diary/index.json` on S3 (no-cache). The s
 
 ## Deleting
 
-Add the stamp and original filename to `scripts/diary-skip.mjs`. Remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from the local diary cache, then run `npm run photos:sync` so the S3 list and `src/content.ts` no longer list the file.
+To take a photo out of the diary, hide it on the edit page. That is reversible and needs no deploy.
+
+To remove one for good (a close shot of a child, say), add the stamp and original filename to `scripts/diary-skip.mjs`, remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from `public/assets/diary/`, then run `npm run photos:sync` so the S3 list and `src/content.ts` no longer list it.
