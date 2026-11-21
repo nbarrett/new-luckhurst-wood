@@ -1,6 +1,8 @@
 import "./styles.css";
 import {
   diary,
+  diaryFromDays,
+  diaryListUrl,
   faqs,
   formatDiaryDate,
   issues,
@@ -9,6 +11,9 @@ import {
   reportSections,
   sources,
   to,
+  type DiaryDay,
+  type DiaryEntry,
+  type DiaryPhoto,
   type Route
 } from "./content";
 import {mountMap} from "./map";
@@ -267,9 +272,11 @@ function normaliseDiaryId(id: string): string {
   return id;
 }
 
-const film = (() => {
+type Shot = DiaryPhoto & {date: string; day: string; slug: string};
+
+function buildFilm(entries: DiaryEntry[]): Shot[] {
   const taken = new Set<string>();
-  const shots = diary
+  const shots = entries
     .slice()
     .reverse()
     .flatMap((d) => d.photos.map((p) => ({...p, date: d.date, day: d.title})));
@@ -284,7 +291,9 @@ const film = (() => {
     taken.add(slug);
     return {...shot, slug};
   });
-})();
+}
+
+let film = buildFilm(diary);
 
 function filmIndexFor(id: string): number {
   const wanted = normaliseDiaryId(id);
@@ -300,7 +309,7 @@ function filmIndexFor(id: string): number {
   if (byDate >= 0) {
     return byDate;
   }
-  return 0;
+  return Math.max(0, film.length - 1);
 }
 
 function shortDiaryDate(iso: string): string {
@@ -878,6 +887,39 @@ document.addEventListener("click", (event) => {
 window.matchMedia(NARROW).addEventListener("change", () => {
   paint();
 });
+// The photo sync uploads the full diary list to S3, so new photos appear
+// without a site deploy. The bundled list is the fallback.
+async function loadDiaryList(): Promise<boolean> {
+  try {
+    const response = await fetch(diaryListUrl, {cache: "no-cache"});
+    if (!response.ok) {
+      return false;
+    }
+    const days = (await response.json()) as DiaryDay[];
+    const next = buildFilm(diaryFromDays(days));
+    if (next.length === 0 || next.map((s) => s.src).join() === film.map((s) => s.src).join()) {
+      return false;
+    }
+    film = next;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 consumeLegacyHash();
 window.addEventListener("popstate", paint);
-paint();
+const listed = loadDiaryList();
+const ready =
+  parsePath(location.pathname).view === "diary"
+    ? Promise.race([listed, new Promise((done) => setTimeout(done, 1500))])
+    : Promise.resolve();
+ready.then(() => {
+  const shown = film;
+  paint();
+  listed.then(() => {
+    if (film !== shown && parsePath(location.pathname).view === "diary") {
+      paint();
+    }
+  });
+});

@@ -225,7 +225,7 @@ function ingestDrop() {
   return {added, replaced};
 }
 
-function putS3(localPath, key, contentType = "image/jpeg") {
+function putS3(localPath, key, contentType = "image/jpeg", cacheControl = "public, max-age=31536000, immutable") {
   const aws = siteAwsEnv();
   if (!aws.AWS_ACCESS_KEY_ID || !aws.AWS_SECRET_ACCESS_KEY) {
     throw new Error("Missing site AWS credentials in .env — run npm run photos:setup-s3");
@@ -240,7 +240,7 @@ function putS3(localPath, key, contentType = "image/jpeg") {
       "--content-type",
       contentType,
       "--cache-control",
-      "public, max-age=31536000, immutable"
+      cacheControl
     ],
     {encoding: "utf8", env: {...process.env, ...aws}, stdio: ["ignore", "pipe", "pipe"]}
   );
@@ -264,6 +264,15 @@ function uploadDiaryVideo(path) {
   makePoster(path, poster);
   putS3(poster, `${PREFIX}/poster/${name.replace(/\.mp4$/, ".jpg")}`);
   unlinkSync(poster);
+}
+
+// The site reads diary/index.json at load, so new photos show without a deploy.
+function uploadDiaryList(days) {
+  const path = join(tmpdir(), "luckhurst-diary-index.json");
+  writeFileSync(path, JSON.stringify(days));
+  putS3(path, `${PREFIX}/index.json`, "application/json", "no-cache");
+  unlinkSync(path);
+  console.log(`uploaded diary list: ${days.length} days`);
 }
 
 function shrinkDiary() {
@@ -338,6 +347,12 @@ function rewriteContent() {
     const files = byDate.get(iso).map((file) => `"${file}"`).join(",");
     return `  {id: "${iso}", date: "${iso}", title: "${cap.title}", body: "${cap.body}", photos: shots("${altFor(iso)}", [${files}])}`;
   });
+  uploadDiaryList(
+    dates.map((iso) => {
+      const cap = captions.get(iso) || {title: titleFor(iso), body: ""};
+      return {date: iso, title: cap.title, body: cap.body, files: byDate.get(iso)};
+    })
+  );
   const next = `export const diary: DiaryEntry[] = [\n${entries.join(",\n")}\n];`;
   const updated = text.replace(/export const diary: DiaryEntry\[] = \[[\s\S]*?\];/, next);
   writeFileSync(contentPath, updated);

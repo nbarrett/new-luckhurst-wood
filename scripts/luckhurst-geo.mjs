@@ -4,11 +4,13 @@ import {loadEnvFile, root} from "./s3-env.mjs";
 // Where diary photos are actually taken. Worked out from the GPS of the
 // Luckhurst album (Apr-Nov 2026): 5th-95th percentile was lat 51.1272-51.1350,
 // lon 0.6835-0.6986, widened a little to catch the edges of the walks.
+// Widened again to the south and west on 21 November 2026, when deer shots
+// taken up to 290 m south of the first area were missed.
 // This is not the planting boundary in src/site-boundary.json, which the map draws.
 const WALK_AREA = {
-  minLat: 51.1265,
+  minLat: 51.123,
   maxLat: 51.137,
-  minLon: 0.6815,
+  minLon: 0.6795,
   maxLon: 0.7005
 };
 

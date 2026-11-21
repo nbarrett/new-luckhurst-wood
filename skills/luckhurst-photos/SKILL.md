@@ -22,7 +22,7 @@ The quick GPS route copies the Photos database, which needs Full Disk Access for
 Union of:
 
 1. Stills and videos in the Apple Photos album **Luckhurst**
-2. Stills and videos in the Photos library taken after the newest diary day whose GPS falls inside the walking area in `scripts/luckhurst-geo.mjs` (worked out from where the album photos were taken; not the planting boundary in `src/site-boundary.json`). Places listed in `LUCKHURST_GPS_EXCLUDE` in `.env` (home) are left out. Keep coordinates like that out of the repo: it is public.
+2. Stills and videos in the Photos library taken on or after the newest diary day whose GPS falls inside the walking area in `scripts/luckhurst-geo.mjs` (worked out from where the album photos were taken; not the planting boundary in `src/site-boundary.json`). Places listed in `LUCKHURST_GPS_EXCLUDE` in `.env` (home) are left out. Keep coordinates like that out of the repo: it is public.
 
 Skip anything already in `public/assets/diary/` (matched by date-time, including ±1 hour; stills against `.jpg`, videos against `.mp4`). Skip names and stamps in `scripts/diary-skip.mjs` (close shots of a child, and the 8 August photo that was not on site).
 
@@ -38,6 +38,10 @@ Many walks have no GPS. The album is still required.
 - Ingest converts with `avconvert` preset `Preset1280x720` (H.264, SDR, GPS stripped) to `public/assets/diary/<stamp>.mp4`, uploads it to `diary/video/`, and uploads a Quick Look frame as the poster to `diary/poster/<stamp>.jpg`.
 - In the diary a video slide shows its poster with a play button; tap, Enter or Space plays it.
 
+## Publishing without a deploy
+
+Ingest uploads the full diary list to `diary/index.json` on S3 (no-cache). The site reads it when it loads, so new photos and removals show on the live site straight away, with no commit or Pages deploy. `src/content.ts` is still rewritten and is the fallback if the list cannot be fetched; day titles and notes written there win over the list's once deployed.
+
 ## After ingest
 
 - Report added count, days, and newest date
@@ -47,4 +51,4 @@ Many walks have no GPS. The album is still required.
 
 ## Deleting
 
-Add the stamp and original filename to `scripts/diary-skip.mjs`. Remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from the local diary cache, then ingest or edit `src/content.ts` so the day no longer lists the file.
+Add the stamp and original filename to `scripts/diary-skip.mjs`. Remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from the local diary cache, then run `npm run photos:sync` so the S3 list and `src/content.ts` no longer list the file.

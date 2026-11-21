@@ -41,9 +41,41 @@ function shots(date: string, files: string[]): DiaryPhoto[] {
   });
 }
 
+/** One day in the diary list the photo sync uploads to S3 (diary/index.json). */
+export type DiaryDay = {date: string; title: string; body: string; files: string[]};
+
+export const diaryListUrl = `${diaryPhotoBase}/index.json`;
+
+function longDiaryDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+}
+
+/** Builds diary entries from the uploaded list. Text written here in content.ts wins over the list's. */
+export function diaryFromDays(days: DiaryDay[]): DiaryEntry[] {
+  const written = new Map(diary.map((d) => [d.date, d]));
+  return days
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && Array.isArray(d.files))
+    .map((d) => {
+      const here = written.get(d.date);
+      return {
+        id: d.date,
+        date: d.date,
+        title: here?.title || d.title,
+        body: here?.body || d.body,
+        photos: shots(longDiaryDate(d.date), d.files.filter((f) => /^[\w-]+\.(?:jpg|mp4)$/.test(f)))
+      };
+    });
+}
+
 /** Newest first. Every file dropped in public/photos. */
 export const diary: DiaryEntry[] = [
-  {id: "2026-11-21", date: "2026-11-21", title: "21 November", body: "", photos: shots("21 November 2026", ["2026-11-21-1425-2c6ef495.jpg","2026-11-21-1425-a68ea99e.jpg","2026-11-21-1425-ffab6f30.jpg","2026-11-21-1429-47e40f8f.jpg","2026-11-21-1431-406f47de.jpg","2026-11-21-1435-38a7d3f6.jpg","2026-11-21-1435-6cbef46c.jpg","2026-11-21-1436-5fe63bf6.jpg","2026-11-21-1437-1949e2d9.jpg","2026-11-21-1437-8ad7a403.jpg","2026-11-21-1438-14e7b95f.jpg","2026-11-21-1443-efb34ffd.jpg","2026-11-21-1444-3031fe9e.jpg","2026-11-21-1506-9fd6cd8c.jpg","2026-11-21-1510-46ff64b9.jpg","2026-11-21-1512-ba7de286.jpg","2026-11-21-1512-e66f33e6.jpg","2026-11-21-1513-eb2a45a9.jpg","2026-11-21-1514-19786e02.jpg","2026-11-21-1522-d2440f75.jpg"])},
+  {id: "2026-11-21", date: "2026-11-21", title: "21 November", body: "", photos: shots("21 November 2026", ["2026-11-21-1425-2c6ef495.jpg","2026-11-21-1425-a68ea99e.jpg","2026-11-21-1425-ffab6f30.jpg","2026-11-21-1429-47e40f8f.jpg","2026-11-21-1431-406f47de.jpg","2026-11-21-1435-38a7d3f6.jpg","2026-11-21-1435-6cbef46c.jpg","2026-11-21-1436-5fe63bf6.jpg","2026-11-21-1437-1949e2d9.jpg","2026-11-21-1437-8ad7a403.jpg","2026-11-21-1438-14e7b95f.jpg","2026-11-21-1443-efb34ffd.jpg","2026-11-21-1444-3031fe9e.jpg","2026-11-21-1453-0fcb9398.jpg","2026-11-21-1453-1c2b6aed.jpg","2026-11-21-1456-337e5e8b.jpg","2026-11-21-1458-a39b5291.jpg","2026-11-21-1459-14e60f70.jpg","2026-11-21-1501-1d67da59.jpg","2026-11-21-1502-e1827b38.jpg","2026-11-21-1506-9fd6cd8c.jpg","2026-11-21-1510-46ff64b9.jpg","2026-11-21-1512-ba7de286.jpg","2026-11-21-1512-e66f33e6.jpg","2026-11-21-1513-eb2a45a9.jpg","2026-11-21-1514-19786e02.jpg","2026-11-21-1522-d2440f75.jpg"])},
   {id: "2026-11-19", date: "2026-11-19", title: "19 November", body: "", photos: shots("19 November 2026", ["2026-11-19-1507-325e5103.jpg","2026-11-19-1507-68b28901.jpg","2026-11-19-1508-95ed47ad.jpg","2026-11-19-1509-2f346a31.jpg","2026-11-19-1511-eea9f5dc.jpg","2026-11-19-1511-f6e23e2f.jpg","2026-11-19-1515-1792a39a.jpg","2026-11-19-1521-ff3cac9c.jpg","2026-11-19-1522-24f89ba9.jpg","2026-11-19-1522-4e9cda13.mp4","2026-11-19-1524-02f0e542.jpg","2026-11-19-1524-84ffece6.jpg","2026-11-19-1525-ceea4dd5.mp4","2026-11-19-1525-f8c05b05.mp4","2026-11-19-1526-54baaec0.mp4","2026-11-19-1526-c0905ab1.mp4","2026-11-19-1528-74d37fe4.jpg","2026-11-19-1530-40e02829.jpg"])},
   {id: "2026-11-18", date: "2026-11-18", title: "18 November", body: "", photos: shots("18 November 2026", ["2026-11-18-1528-732609d7.jpg","2026-11-18-1528-96437d0e.jpg","2026-11-18-1534-b935da18.jpg"])},
   {id: "2026-11-16", date: "2026-11-16", title: "16 November", body: "", photos: shots("16 November 2026", ["2026-11-16-1439-65ad5bcc.jpg","2026-11-16-1439-977d7ae3.jpg","2026-11-16-1440-04e28c35.jpg","2026-11-16-1440-1136e608.jpg","2026-11-16-1441-2c6639a1.jpg","2026-11-16-1441-593e78f2.jpg","2026-11-16-1442-ef4bbe25.jpg","2026-11-16-1446-b2434451.jpg","2026-11-16-1447-0cc774bb.jpg","2026-11-16-1447-b33035cd.jpg","2026-11-16-1511-593ece0b.jpg"])},

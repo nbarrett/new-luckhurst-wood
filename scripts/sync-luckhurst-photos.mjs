@@ -24,10 +24,9 @@ function newestDiaryDay() {
 }
 
 const newestDay = newestDiaryDay();
+// Start from the newest diary day itself, so a second walk that day is found.
+// Shots already in the diary are skipped by their time below.
 const sinceDate = newestDay ? new Date(`${newestDay}T00:00:00`) : new Date("2026-04-01T00:00:00");
-if (newestDay) {
-  sinceDate.setDate(sinceDate.getDate() + 1);
-}
 const SINCE_UNIX = sinceDate.getTime() / 1000;
 
 // Stills and videos are tracked apart so a clip filmed in the same minute as a
