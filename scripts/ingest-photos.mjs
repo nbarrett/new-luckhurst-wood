@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
-import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync} from "node:fs";
+import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -11,7 +11,6 @@ import {PREFIX, siteAwsEnv} from "./s3-env.mjs";
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const dropDir = join(root, "public/photos");
 const diaryDir = join(root, "public/assets/diary");
-const contentPath = join(root, "src/content.ts");
 const maxEdge = 2560;
 const fitEdge = 1600;
 const jpegQuality = "88";
@@ -303,25 +302,10 @@ function titleFor(iso) {
   });
 }
 
-function altFor(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC"
-  });
-}
-
-// Day titles, notes and hidden photos are edited on the S3 list (the edit
-// page at /__diary/ under npm run dev), so they are read back from it here.
-// src/content.ts is the fallback the site uses if the list cannot be fetched.
-function rewriteContent(listed) {
-  const text = readFileSync(contentPath, "utf8");
-  const captions = new Map();
-  for (const match of text.matchAll(/\{id: "([^"]+)", date: "([^"]+)", title: ("(?:[^"\\]|\\.)*"), body: ("(?:[^"\\]|\\.)*")/g)) {
-    captions.set(match[2], {title: JSON.parse(match[3]), body: JSON.parse(match[4])});
-  }
+// The diary list on S3 is what the site shows. Titles, notes and hidden
+// photos are edited there (the edit page at /__diary/ under npm run dev),
+// so they are kept; this only brings the file lists up to date.
+function publishDiaryList(listed) {
   const remote = new Map(listed.map((day) => [day.date, day]));
   const byDate = new Map();
   for (const name of readdirSync(diaryDir).sort()) {
@@ -335,41 +319,30 @@ function rewriteContent(listed) {
   }
   const dates = [...byDate.keys()].sort().reverse();
   if (dates.length === 0) {
-    console.log("no local diary files — left src/content.ts unchanged");
+    console.log("no local diary files — left the S3 diary list unchanged");
     return {days: 0, photos: 0};
   }
   const days = dates.map((iso) => {
-    const here = captions.get(iso) || {title: titleFor(iso), body: ""};
     const there = remote.get(iso);
     const files = byDate.get(iso);
     return {
       date: iso,
-      title: there?.title || here.title,
-      body: there ? there.body : here.body,
+      title: there?.title || titleFor(iso),
+      body: there?.body ?? "",
       files,
       hidden: (there?.hidden || []).filter((file) => files.includes(file))
     };
   });
   putDiaryList(days);
-  console.log(`uploaded diary list: ${days.length} days`);
-  const entries = days
-    .map((day) => ({...day, shown: day.files.filter((file) => !day.hidden.includes(file))}))
-    .filter((day) => day.shown.length > 0)
-    .map((day) => {
-      const files = day.shown.map((file) => `"${file}"`).join(",");
-      return `  {id: "${day.date}", date: "${day.date}", title: ${JSON.stringify(day.title)}, body: ${JSON.stringify(day.body)}, photos: shots("${altFor(day.date)}", [${files}])}`;
-    });
-  const next = `export const diary: DiaryEntry[] = [\n${entries.join(",\n")}\n];`;
-  const updated = text.replace(/export const diary: DiaryEntry\[] = \[[\s\S]*?\];/, next);
-  writeFileSync(contentPath, updated);
   const hidden = days.reduce((n, day) => n + day.hidden.length, 0);
-  return {days: entries.length, photos: days.reduce((n, day) => n + day.files.length, 0) - hidden};
+  console.log(`uploaded diary list: ${days.length} days`);
+  return {days: days.length, photos: days.reduce((n, day) => n + day.files.length, 0) - hidden};
 }
 
 const listed = await fetchDiaryList();
 const drop = ingestDrop();
 const shrunk = shrinkDiary();
-const written = rewriteContent(listed);
+const written = publishDiaryList(listed);
 console.log(
   `done added=${drop.added.length} replaced=${drop.replaced.length} shrunk=${shrunk} days=${written.days} photos=${written.photos}`
 );

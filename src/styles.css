@@ -706,6 +706,29 @@ html.full-width body:has(.cinema) {
   color: #fff;
 }
 
+.cinema-waiting {
+  justify-content: center;
+}
+
+.cinema-wait {
+  padding: 36px 24px;
+}
+
+.cinema-wait-note {
+  margin: 10px 0 0;
+  opacity: 0.85;
+}
+
+.cinema-retry {
+  font: inherit;
+  color: #b7e0c4;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 html.full-width .cinema {
   width: 100%;
 }

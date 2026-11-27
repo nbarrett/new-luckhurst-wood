@@ -1,6 +1,5 @@
 import "./styles.css";
 import {
-  diary,
   diaryFromDays,
   diaryListUrl,
   faqs,
@@ -12,7 +11,6 @@ import {
   sources,
   to,
   type DiaryDay,
-  type DiaryEntry,
   type DiaryPhoto,
   type Route
 } from "./content";
@@ -274,7 +272,7 @@ function normaliseDiaryId(id: string): string {
 
 type Shot = DiaryPhoto & {date: string; day: string; note: string; slug: string};
 
-function buildFilm(entries: DiaryEntry[]): Shot[] {
+function buildFilm(entries: ReturnType<typeof diaryFromDays>): Shot[] {
   const taken = new Set<string>();
   const shots = entries
     .slice()
@@ -293,7 +291,10 @@ function buildFilm(entries: DiaryEntry[]): Shot[] {
   });
 }
 
-let film = buildFilm(diary);
+// The diary's photos and notes live in S3 (diary/index.json), so the photo
+// sync and the edit page publish them without a site deploy.
+let film: Shot[] = [];
+let diaryState: "loading" | "ready" | "failed" = "loading";
 
 function filmIndexFor(id: string): number {
   const wanted = normaliseDiaryId(id);
@@ -377,7 +378,25 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+function diaryWaiting(): string {
+  const message =
+    diaryState === "failed"
+      ? `<p class="cinema-date">The diary photos would not load.</p>
+         <p class="cinema-wait-note">Check your connection, then <button type="button" class="cinema-retry" onclick="location.reload()">try again</button>.</p>`
+      : `<p class="cinema-wait-note">Loading the diary…</p>`;
+  return `
+    <div class="cinema cinema-waiting">
+      <div class="cinema-wait">
+        <p class="cinema-kicker">Neighbour diary · Smarden</p>
+        ${message}
+      </div>
+    </div>`;
+}
+
 function diaryView(id: string): string {
+  if (film.length === 0) {
+    return diaryWaiting();
+  }
   const start = film[filmIndexFor(id)] ?? film[0];
   const slides = film
     .map(
@@ -897,39 +916,24 @@ document.addEventListener("click", (event) => {
 window.matchMedia(NARROW).addEventListener("change", () => {
   paint();
 });
-// The photo sync uploads the full diary list to S3, so new photos appear
-// without a site deploy. The bundled list is the fallback.
-async function loadDiaryList(): Promise<boolean> {
+async function loadDiaryList(): Promise<void> {
   try {
     const response = await fetch(diaryListUrl, {cache: "no-cache"});
     if (!response.ok) {
-      return false;
+      throw new Error(`HTTP ${response.status}`);
     }
-    const days = (await response.json()) as DiaryDay[];
-    const next = buildFilm(diaryFromDays(days));
-    if (next.length === 0 || next.map((s) => s.src).join() === film.map((s) => s.src).join()) {
-      return false;
-    }
-    film = next;
-    return true;
+    film = buildFilm(diaryFromDays((await response.json()) as DiaryDay[]));
+    diaryState = film.length > 0 ? "ready" : "failed";
   } catch {
-    return false;
+    diaryState = "failed";
   }
 }
 
 consumeLegacyHash();
 window.addEventListener("popstate", paint);
-const listed = loadDiaryList();
-const ready =
-  parsePath(location.pathname).view === "diary"
-    ? Promise.race([listed, new Promise((done) => setTimeout(done, 1500))])
-    : Promise.resolve();
-ready.then(() => {
-  const shown = film;
-  paint();
-  listed.then(() => {
-    if (film !== shown && parsePath(location.pathname).view === "diary") {
-      paint();
-    }
-  });
+paint();
+loadDiaryList().then(() => {
+  if (parsePath(location.pathname).view === "diary") {
+    paint();
+  }
 });

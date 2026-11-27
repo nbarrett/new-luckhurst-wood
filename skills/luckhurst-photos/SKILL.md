@@ -5,7 +5,7 @@ description: Sync New Luckhurst Wood diary stills and videos from Apple Photos u
 
 # Luckhurst diary photo sync
 
-Works in any agent. Run from the `new-luckhurst-wood` repo root. Do not push unless asked.
+Works in any agent. Run from the `new-luckhurst-wood` repo root. Do not push unless asked (a sync leaves nothing to push).
 
 ## Command
 
@@ -38,9 +38,9 @@ Many walks have no GPS. The album is still required.
 - Ingest converts with `avconvert` preset `Preset1280x720` (H.264, SDR, GPS stripped) to `public/assets/diary/<stamp>.mp4`, uploads it to `diary/video/`, and uploads a Quick Look frame as the poster to `diary/poster/<stamp>.jpg`.
 - In the diary a video slide shows its poster with a play button; tap, Enter or Space plays it.
 
-## Publishing without a deploy
+## Where the diary lives
 
-Ingest uploads the full diary list to `diary/index.json` on S3 (no-cache). The site reads it when it loads, so new photos show on the live site straight away, with no commit or Pages deploy. `src/content.ts` is still rewritten and is only the fallback if the list cannot be fetched.
+The diary is content-managed: its photos, day titles, notes and hidden photos all live in S3, and nothing about it is in git. Ingest uploads the full diary list to `diary/index.json` (no-cache), and the site reads it on load, so new photos show on the live site straight away with no commit or deploy. If the list cannot be loaded the diary says so and offers a retry.
 
 Each day in the list has `title`, `body` (the note shown under the date), `files` and `hidden`. Ingest reads the current list first and keeps its titles, notes and hidden photos; if S3 cannot be reached it stops rather than overwrite them.
 
@@ -51,7 +51,7 @@ Each day in the list has `title`, `body` (the note shown under the date), `files
 ## After ingest
 
 - Report added count, days, and newest date
-- Leave `src/content.ts` dirty for review
+- There is nothing to commit afterwards: the sync only changes S3
 - If new stills or videos show close identifiable pictures of a child, list them and wait before they stay in the diary. For videos, look at the poster frame (`qlmanage -t` on the `.mp4`) and say that only the first frame was checked
 - Do not delete other photos unless they are named
 
@@ -59,4 +59,4 @@ Each day in the list has `title`, `body` (the note shown under the date), `files
 
 To take a photo out of the diary, hide it on the edit page. That is reversible and needs no deploy.
 
-To remove one for good (a close shot of a child, say), add the stamp and original filename to `scripts/diary-skip.mjs`, remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from `public/assets/diary/`, then run `npm run photos:sync` so the S3 list and `src/content.ts` no longer list it.
+To remove one for good (a close shot of a child, say), add the stamp and original filename to `scripts/diary-skip.mjs`, remove the file from S3 (`diary/` and `diary/fit/` for a still; `diary/video/` and `diary/poster/` for a video) and from `public/assets/diary/`, then run `npm run photos:sync` so the S3 list no longer lists it.

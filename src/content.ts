@@ -56,88 +56,24 @@ function longDiaryDate(iso: string): string {
   });
 }
 
-/** Builds diary entries from the S3 list, which holds the latest titles, notes and hidden photos. */
+/** Builds diary entries from the S3 list, newest day first. */
 export function diaryFromDays(days: DiaryDay[]): DiaryEntry[] {
-  const written = new Map(diary.map((d) => [d.date, d]));
   return days
     .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && Array.isArray(d.files))
     .map((d) => {
-      const here = written.get(d.date);
       const hidden = new Set(Array.isArray(d.hidden) ? d.hidden : []);
       const files = d.files.filter((f) => /^[\w-]+\.(?:jpg|mp4)$/.test(f) && !hidden.has(f));
       return {
         id: d.date,
         date: d.date,
-        title: d.title || here?.title || d.date,
-        body: typeof d.body === "string" ? d.body : (here?.body ?? ""),
+        title: d.title || d.date,
+        body: typeof d.body === "string" ? d.body : "",
         photos: shots(longDiaryDate(d.date), files)
       };
     })
-    .filter((d) => d.photos.length > 0);
+    .filter((d) => d.photos.length > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
-
-/** Newest first. Every file dropped in public/photos. */
-export const diary: DiaryEntry[] = [
-  {id: "2026-11-26", date: "2026-11-26", title: "26 November", body: "", photos: shots("26 November 2026", ["2026-11-26-1504-26056212.jpg","2026-11-26-1504-e0de2fd2.jpg","2026-11-26-1506-0435dd5d.jpg","2026-11-26-1507-77095103.jpg","2026-11-26-1508-b759140a.jpg","2026-11-26-1512-6dd4c9c3.jpg","2026-11-26-1515-abc272bc.jpg","2026-11-26-1518-27a9493c.jpg"])},
-  {id: "2026-11-25", date: "2026-11-25", title: "25 November", body: "", photos: shots("25 November 2026", ["2026-11-25-1505-08432065.jpg","2026-11-25-1506-a2c7bf1f.jpg","2026-11-25-1514-6273c4e0.jpg","2026-11-25-1514-b10ad68f.jpg","2026-11-25-1515-e6b62e86.jpg","2026-11-25-1517-4b330f8a.jpg","2026-11-25-1517-a08a8210.jpg"])},
-  {id: "2026-11-24", date: "2026-11-24", title: "24 November", body: "", photos: shots("24 November 2026", ["2026-11-24-1443-85102581.jpg","2026-11-24-1443-a49acca8.jpg","2026-11-24-1444-c98c7a71.jpg","2026-11-24-1445-8fa21f10.jpg","2026-11-24-1446-04084062.jpg","2026-11-24-1446-3503400c.jpg","2026-11-24-1447-f47534d3.jpg","2026-11-24-1456-a8384468.jpg"])},
-  {id: "2026-11-23", date: "2026-11-23", title: "23 November", body: "", photos: shots("23 November 2026", ["2026-11-23-1427-50d25bed.jpg","2026-11-23-1427-eb1b0dc0.jpg","2026-11-23-1430-7fdd8979.jpg","2026-11-23-1431-40b97805.jpg","2026-11-23-1432-330d8feb.jpg","2026-11-23-1432-6d0510b1.jpg","2026-11-23-1435-9a96e484.jpg","2026-11-23-1438-3636d6e3.jpg"])},
-  {id: "2026-11-21", date: "2026-11-21", title: "21 November", body: "", photos: shots("21 November 2026", ["2026-11-21-1425-2c6ef495.jpg","2026-11-21-1425-a68ea99e.jpg","2026-11-21-1425-ffab6f30.jpg","2026-11-21-1429-47e40f8f.jpg","2026-11-21-1431-406f47de.jpg","2026-11-21-1435-38a7d3f6.jpg","2026-11-21-1435-6cbef46c.jpg","2026-11-21-1436-5fe63bf6.jpg","2026-11-21-1437-1949e2d9.jpg","2026-11-21-1437-8ad7a403.jpg","2026-11-21-1438-14e7b95f.jpg","2026-11-21-1443-efb34ffd.jpg","2026-11-21-1444-3031fe9e.jpg","2026-11-21-1453-0fcb9398.jpg","2026-11-21-1453-1c2b6aed.jpg","2026-11-21-1456-337e5e8b.jpg","2026-11-21-1458-a39b5291.jpg","2026-11-21-1459-14e60f70.jpg","2026-11-21-1501-1d67da59.jpg","2026-11-21-1502-e1827b38.jpg","2026-11-21-1506-9fd6cd8c.jpg","2026-11-21-1510-46ff64b9.jpg","2026-11-21-1512-ba7de286.jpg","2026-11-21-1512-e66f33e6.jpg","2026-11-21-1513-eb2a45a9.jpg","2026-11-21-1514-19786e02.jpg","2026-11-21-1522-d2440f75.jpg"])},
-  {id: "2026-11-19", date: "2026-11-19", title: "19 November", body: "", photos: shots("19 November 2026", ["2026-11-19-1507-325e5103.jpg","2026-11-19-1507-68b28901.jpg","2026-11-19-1508-95ed47ad.jpg","2026-11-19-1509-2f346a31.jpg","2026-11-19-1511-eea9f5dc.jpg","2026-11-19-1511-f6e23e2f.jpg","2026-11-19-1515-1792a39a.jpg","2026-11-19-1521-ff3cac9c.jpg","2026-11-19-1522-24f89ba9.jpg","2026-11-19-1522-4e9cda13.mp4","2026-11-19-1524-02f0e542.jpg","2026-11-19-1524-84ffece6.jpg","2026-11-19-1525-ceea4dd5.mp4","2026-11-19-1525-f8c05b05.mp4","2026-11-19-1526-54baaec0.mp4","2026-11-19-1526-c0905ab1.mp4","2026-11-19-1528-74d37fe4.jpg","2026-11-19-1530-40e02829.jpg"])},
-  {id: "2026-11-18", date: "2026-11-18", title: "18 November", body: "", photos: shots("18 November 2026", ["2026-11-18-1528-732609d7.jpg","2026-11-18-1528-96437d0e.jpg","2026-11-18-1534-b935da18.jpg"])},
-  {id: "2026-11-16", date: "2026-11-16", title: "16 November", body: "", photos: shots("16 November 2026", ["2026-11-16-1439-65ad5bcc.jpg","2026-11-16-1439-977d7ae3.jpg","2026-11-16-1440-04e28c35.jpg","2026-11-16-1440-1136e608.jpg","2026-11-16-1441-2c6639a1.jpg","2026-11-16-1441-593e78f2.jpg","2026-11-16-1442-ef4bbe25.jpg","2026-11-16-1446-b2434451.jpg","2026-11-16-1447-0cc774bb.jpg","2026-11-16-1447-b33035cd.jpg","2026-11-16-1511-593ece0b.jpg"])},
-  {id: "2026-11-14", date: "2026-11-14", title: "14 November", body: "", photos: shots("14 November 2026", ["2026-11-14-0948-cddbde0d.jpg","2026-11-14-0951-72f1a68d.jpg","2026-11-14-0955-582f35f7.jpg"])},
-  {id: "2026-11-11", date: "2026-11-11", title: "11 November", body: "", photos: shots("11 November 2026", ["2026-11-11-1519-9e13d3fc.jpg"])},
-  {id: "2026-11-10", date: "2026-11-10", title: "10 November", body: "", photos: shots("10 November 2026", ["2026-11-10-1526-e96958ef.jpg","2026-11-10-1529-5b289777.jpg","2026-11-10-1529-7a82c1cc.jpg"])},
-  {id: "2026-11-09", date: "2026-11-09", title: "9 November", body: "", photos: shots("9 November 2026", ["2026-11-09-1522-ab11aff8.jpg","2026-11-09-1522-b1e1e82b.jpg","2026-11-09-1522-e0f61a83.jpg","2026-11-09-1525-0909d5fb.jpg","2026-11-09-1526-78890dcf.jpg","2026-11-09-1527-21246f28.jpg","2026-11-09-1534-9f09844b.jpg","2026-11-09-1535-a395dfc8.jpg"])},
-  {id: "2026-11-07", date: "2026-11-07", title: "7 November", body: "", photos: shots("7 November 2026", ["2026-11-07-1529-348b03ad.jpg","2026-11-07-1532-00756ed7.jpg","2026-11-07-1534-a6bef1c2.jpg","2026-11-07-1540-be163fb7.jpg","2026-11-07-1543-7d7c5e52.jpg","2026-11-07-1545-d0bd5f2f.jpg","2026-11-07-1545-dbbeca3b.jpg","2026-11-07-1547-fd1650bd.jpg"])},
-  {id: "2026-11-06", date: "2026-11-06", title: "6 November", body: "", photos: shots("6 November 2026", ["2026-11-06-1514-f21816ad.jpg","2026-11-06-1516-20fb3a61.jpg","2026-11-06-1516-50c1c0f6.jpg","2026-11-06-1516-766c1aaf.jpg","2026-11-06-1517-de9809d8.jpg","2026-11-06-1518-9e97bc7a.jpg","2026-11-06-1519-6f4b87bc.jpg","2026-11-06-1519-d7a2efac.jpg","2026-11-06-1520-7e054024.jpg","2026-11-06-1522-cc3efca9.jpg","2026-11-06-1526-eb2ca8ce.jpg","2026-11-06-1528-f60fa058.jpg","2026-11-06-1529-75c69f2d.jpg","2026-11-06-1530-cf75c54f.jpg"])},
-  {id: "2026-11-05", date: "2026-11-05", title: "5 November", body: "", photos: shots("5 November 2026", ["2026-11-05-1558-18ab1d0c.jpg","2026-11-05-1558-3c04267f.jpg","2026-11-05-1558-e9878d5b.jpg","2026-11-05-1600-089e67f3.jpg","2026-11-05-1600-952f951b.jpg","2026-11-05-1601-37c9e658.jpg","2026-11-05-1601-7d20eeda.jpg","2026-11-05-1603-b32842b5.jpg","2026-11-05-1611-9866e57f.jpg","2026-11-05-1612-e395a5a8.jpg","2026-11-05-1614-246aac37.jpg"])},
-  {id: "2026-11-04", date: "2026-11-04", title: "4 November", body: "", photos: shots("4 November 2026", ["2026-11-04-1525-cfc6b84e.jpg","2026-11-04-1533-784f2eb9.jpg","2026-11-04-1537-0435a218.jpg","2026-11-04-1537-48426dda.jpg","2026-11-04-1544-a929f153.jpg","2026-11-04-1544-ac356415.jpg","2026-11-04-1547-3adbb647.mp4","2026-11-04-1547-3f343e68.mp4"])},
-  {id: "2026-10-31", date: "2026-10-31", title: "31 October", body: "", photos: shots("31 October 2026", ["2026-10-31-1602-c5f90d25.jpg","2026-10-31-1608-f785d26e.jpg","2026-10-31-1612-366edcd6.jpg"])},
-  {id: "2026-10-30", date: "2026-10-30", title: "30 October", body: "", photos: shots("30 October 2026", ["2026-10-30-1601-83dc5a60.jpg","2026-10-30-1602-19987d49.jpg","2026-10-30-1602-4c32f091.jpg","2026-10-30-1602-feb2681c.jpg","2026-10-30-1603-ed37bab3.jpg"])},
-  {id: "2026-10-29", date: "2026-10-29", title: "29 October", body: "", photos: shots("29 October 2026", ["2026-10-29-1547-38a3a39b.jpg","2026-10-29-1548-7ee93a88.jpg","2026-10-29-1548-af388be8.jpg","2026-10-29-1552-e1f00569.jpg","2026-10-29-1553-1a7e4f21.jpg","2026-10-29-1558-6e885222.jpg","2026-10-29-1600-2e08b964.jpg","2026-10-29-1600-e4b59a11.jpg","2026-10-29-1601-490043bf.jpg","2026-10-29-1603-05aba413.jpg","2026-10-29-1604-0ec1bbfc.jpg","2026-10-29-1604-2a8b8e05.jpg","2026-10-29-1605-d9275091.jpg","2026-10-29-1608-0fde17db.jpg","2026-10-29-1612-0dbcd130.jpg","2026-10-29-1614-74c42c6b.jpg"])},
-  {id: "2026-10-28", date: "2026-10-28", title: "28 October", body: "", photos: shots("28 October 2026", ["2026-10-28-1545-0fab65d2.jpg","2026-10-28-1545-36e0c0c7.jpg","2026-10-28-1546-b0e8a270.jpg","2026-10-28-1551-64f7c837.jpg"])},
-  {id: "2026-10-27", date: "2026-10-27", title: "27 October", body: "", photos: shots("27 October 2026", ["2026-10-27-1613-b35e3c8d.jpg","2026-10-27-1626-7c2e16e8.jpg","2026-10-27-1630-2f0c8269.jpg","2026-10-27-1633-7e1c90f3.jpg","2026-10-27-1635-c1d68e62.jpg"])},
-  {id: "2026-10-19", date: "2026-10-19", title: "19 October", body: "", photos: shots("19 October 2026", ["2026-10-19-1530-47d36493.jpg","2026-10-19-1533-e514cb1c.jpg","2026-10-19-1538-00015570.jpg","2026-10-19-1545-8e800cd4.jpg"])},
-  {id: "2026-10-17", date: "2026-10-17", title: "17 October", body: "Evening from across the road.", photos: shots("17 October 2026", ["2026-10-17-1708-62f873be.jpg","2026-10-17-1708-e146d25f.jpg","2026-10-17-1711-6d42b074.jpg"])},
-  {id: "2026-10-15", date: "2026-10-15", title: "15 October", body: "", photos: shots("15 October 2026", ["2026-10-15-1606-d79f9fc4.jpg","2026-10-15-1613-d9013c09.jpg","2026-10-15-1617-307681a3.jpg","2026-10-15-1706-1cdc0184.mp4"])},
-  {id: "2026-10-14", date: "2026-10-14", title: "14 October", body: "", photos: shots("14 October 2026", ["2026-10-14-1650-1aa20f3a.jpg"])},
-  {id: "2026-10-13", date: "2026-10-13", title: "13 October", body: "", photos: shots("13 October 2026", ["2026-10-13-1645-5de35132.jpg","2026-10-13-1645-7c9ea987.jpg","2026-10-13-1645-d840919a.jpg","2026-10-13-1651-8f461fe1.jpg","2026-10-13-1657-d2e6a508.jpg"])},
-  {id: "2026-10-11", date: "2026-10-11", title: "11 October", body: "", photos: shots("11 October 2026", ["2026-10-11-0103-35b54ba1.jpg","2026-10-11-0125-f7e0be5f.jpg"])},
-  {id: "2026-10-10", date: "2026-10-10", title: "10 October", body: "Tracks, machines and the fields.", photos: shots("10 October 2026", ["2026-10-10-1022-1ef47736.jpg","2026-10-10-1026-012a18ab.jpg","2026-10-10-1026-c46b7dc8.jpg","2026-10-10-1031-ae6b9942.jpg","2026-10-10-1032-886ae319.jpg","2026-10-10-1038-625930f5.jpg","2026-10-10-1632-47a1c266.jpg","2026-10-10-1711-70225f3d.jpg","2026-10-10-1717-fa8cf171.jpg"])},
-  {id: "2026-10-04", date: "2026-10-04", title: "4 October", body: "", photos: shots("4 October 2026", ["2026-10-04-1838-9574962c.jpg","2026-10-04-1839-a1b99b9f.jpg","2026-10-04-1840-49fe8f63.jpg"])},
-  {id: "2026-09-30", date: "2026-09-30", title: "30 September", body: "", photos: shots("30 September 2026", ["2026-09-30-0646-6010490b.jpg"])},
-  {id: "2026-09-22", date: "2026-09-22", title: "22 September", body: "", photos: shots("22 September 2026", ["2026-09-22-1738-3061246e.jpg"])},
-  {id: "2026-09-17", date: "2026-09-17", title: "17 September", body: "Sunset, plant and the new track.", photos: shots("17 September 2026", ["2026-09-17-1845-f6407f66.jpg","2026-09-17-1850-1bf9ac6a.jpg","2026-09-17-1853-60ae308d.jpg","2026-09-17-1858-dc95a820.jpg","2026-09-17-1859-bc753503.jpg"])},
-  {id: "2026-09-16", date: "2026-09-16", title: "16 September", body: "", photos: shots("16 September 2026", ["2026-09-16-1813-65eaff5e.jpg"])},
-  {id: "2026-09-15", date: "2026-09-15", title: "15 September", body: "The first forest track going in.", photos: shots("15 September 2026", ["2026-09-15-1840-31fc0d29.jpg","2026-09-15-1841-6d60ce3a.jpg","2026-09-15-1843-49edfd32.jpg","2026-09-15-1843-57f86a1d.jpg","2026-09-15-1844-c90ac39a.jpg","2026-09-15-1845-4eb6d633.jpg","2026-09-15-1845-5ada607e.jpg","2026-09-15-1845-f3097621.jpg","2026-09-15-1847-d4b80064.jpg","2026-09-15-1849-6c057536.jpg","2026-09-15-1858-d7467ea7.jpg","2026-09-15-1905-1aa1390b.jpg"])},
-  {id: "2026-09-14", date: "2026-09-14", title: "14 September", body: "Plant arriving on the fields.", photos: shots("14 September 2026", ["2026-09-14-1825-5a2c40a7.jpg"])},
-  {id: "2026-09-11", date: "2026-09-11", title: "11 September", body: "", photos: shots("11 September 2026", ["2026-09-11-1604-32bf605d.jpg","2026-09-11-1610-66075f0b.jpg","2026-09-11-1610-9b043319.jpg","2026-09-11-1610-d2401576.jpg","2026-09-11-1611-c83937a6.jpg","2026-09-11-1616-417798fb.jpg","2026-09-11-1617-de07b241.jpg"])},
-  {id: "2026-09-09", date: "2026-09-09", title: "9 September", body: "", photos: shots("9 September 2026", ["2026-09-09-1758-09742526.jpg","2026-09-09-1800-6a6b4427.jpg","2026-09-09-1800-92a0915f.jpg","2026-09-09-1807-6c286198.jpg","2026-09-09-1810-378a1574.jpg"])},
-  {id: "2026-09-08", date: "2026-09-08", title: "8 September", body: "", photos: shots("8 September 2026", ["2026-09-08-1744-f705f60e.jpg","2026-09-08-1745-6c3a25dd.jpg","2026-09-08-1746-b70f15e2.jpg","2026-09-08-1747-90fa2840.jpg","2026-09-08-1751-86160b4f.jpg","2026-09-08-1753-c86a3889.jpg","2026-09-08-1759-21716ddf.jpg","2026-09-08-1818-bd87de36.jpg","2026-09-08-1818-cde1c0f0.jpg"])},
-  {id: "2026-09-07", date: "2026-09-07", title: "7 September", body: "", photos: shots("7 September 2026", ["2026-09-07-1803-7d203204.jpg","2026-09-07-1804-25ccff70.jpg","2026-09-07-1807-38c2bb8d.jpg","2026-09-07-1807-9e17294d.jpg"])},
-  {id: "2026-09-02", date: "2026-09-02", title: "2 September", body: "", photos: shots("2 September 2026", ["2026-09-02-1855-c833fe0d.jpg","2026-09-02-1856-531cd996.jpg","2026-09-02-1858-96b4e8ec.jpg"])},
-  {id: "2026-08-26", date: "2026-08-26", title: "26 August", body: "", photos: shots("26 August 2026", ["2026-08-26-1817-2c8650a4.jpg","2026-08-26-1817-a0495a6a.jpg","2026-08-26-1817-a4c459d3.jpg"])},
-  {id: "2026-08-24", date: "2026-08-24", title: "24 August", body: "", photos: shots("24 August 2026", ["2026-08-24-1813-d8a8ca34.jpg","2026-08-24-1820-67cb4478.jpg"])},
-  {id: "2026-08-21", date: "2026-08-21", title: "21 August", body: "", photos: shots("21 August 2026", ["2026-08-21-1825-4d30e910.jpg"])},
-  {id: "2026-08-16", date: "2026-08-16", title: "16 August", body: "", photos: shots("16 August 2026", ["2026-08-16-1757-8ba68668.jpg","2026-08-16-1757-cb301632.jpg","2026-08-16-1759-7a7e97aa.jpg","2026-08-16-1800-f46b239e.jpg","2026-08-16-1804-aa54b3b6.jpg","2026-08-16-1819-c46ced6e.jpg","2026-08-16-1822-19d771bb.jpg","2026-08-16-1822-3b81313b.jpg","2026-08-16-1822-41abb363.jpg"])},
-  {id: "2026-08-12", date: "2026-08-12", title: "12 August", body: "", photos: shots("12 August 2026", ["2026-08-12-1902-8ddf1088.jpg","2026-08-12-1902-9761bca0.jpg","2026-08-12-1905-82e0dfb0.jpg"])},
-  {id: "2026-08-11", date: "2026-08-11", title: "11 August", body: "", photos: shots("11 August 2026", ["2026-08-11-1800-6579e0dd.jpg","2026-08-11-1801-856ce2d1.jpg","2026-08-11-1817-4c44f162.jpg","2026-08-11-1818-b8e96102.jpg","2026-08-11-1912-ee531a43.mp4"])},
-  {id: "2026-08-10", date: "2026-08-10", title: "10 August", body: "", photos: shots("10 August 2026", ["2026-08-10-1811-1aec47e2.jpg","2026-08-10-1812-69cc6a54.jpg","2026-08-10-1817-d7b54175.jpg","2026-08-10-1821-499536d8.jpg","2026-08-10-1833-57d84f5c.jpg","2026-08-10-1835-96a27b99.jpg","2026-08-10-1839-b421b630.jpg"])},
-  {id: "2026-07-15", date: "2026-07-15", title: "15 July", body: "", photos: shots("15 July 2026", ["2026-07-15-1801-e2e1745b.jpg","2026-07-15-1809-744f0f8a.jpg","2026-07-15-1828-aa0151ec.jpg","2026-07-15-1837-15fd13ec.jpg","2026-07-15-1854-34bf72be.jpg"])},
-  {id: "2026-06-25", date: "2026-06-25", title: "25 June", body: "", photos: shots("25 June 2026", ["2026-06-25-1759-b1534d6b.jpg","2026-06-25-1759-c0fcf825.jpg","2026-06-25-1815-75aa7fb8.jpg","2026-06-25-1848-075e5f53.jpg","2026-06-25-1848-72a6657b.jpg","2026-06-25-1849-8c382b59.jpg"])},
-  {id: "2026-06-18", date: "2026-06-18", title: "18 June", body: "", photos: shots("18 June 2026", ["2026-06-18-1800-3e5d7b67.jpg","2026-06-18-1801-2c66b6fb.jpg","2026-06-18-1802-9d9e013f.jpg"])},
-  {id: "2026-05-22", date: "2026-05-22", title: "22 May", body: "", photos: shots("22 May 2026", ["2026-05-22-0818-cf312000.jpg"])},
-  {id: "2026-05-21", date: "2026-05-21", title: "21 May", body: "", photos: shots("21 May 2026", ["2026-05-21-1710-9a91316c.mp4"])},
-  {id: "2026-05-19", date: "2026-05-19", title: "19 May", body: "", photos: shots("19 May 2026", ["2026-05-19-1807-fb52eb0e.jpg"])},
-  {id: "2026-05-05", date: "2026-05-05", title: "5 May", body: "", photos: shots("5 May 2026", ["2026-05-05-1247-984fa1ff.jpg"])},
-  {id: "2026-05-04", date: "2026-05-04", title: "4 May", body: "", photos: shots("4 May 2026", ["2026-05-04-1638-4dddec5c.jpg","2026-05-04-1739-90e62e71.mp4"])},
-  {id: "2026-04-22", date: "2026-04-22", title: "22 April", body: "", photos: shots("22 April 2026", ["2026-04-22-1737-7f3571b8.jpg","2026-04-22-1739-f248356e.jpg"])},
-  {id: "2026-04-16", date: "2026-04-16", title: "16 April", body: "", photos: shots("16 April 2026", ["2026-04-16-1633-6ba79133.jpg"])},
-  {id: "2026-04-13", date: "2026-04-13", title: "13 April", body: "", photos: shots("13 April 2026", ["2026-04-13-1800-4e035ab5.jpg","2026-04-13-1813-2ca1327c.jpg","2026-04-13-1816-3693a298.jpg"])},
-  {id: "2026-04-10", date: "2026-04-10", title: "10 April", body: "", photos: shots("10 April 2026", ["2026-04-10-1732-d99889c4.jpg","2026-04-10-1742-3782a27a.jpg"])}
-];
 
 export const sources = {
   consult: "https://consult.forestryengland.uk/forest-districts/nluckhurstw/",
